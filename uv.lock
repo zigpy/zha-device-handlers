@@ -6,9 +6,6 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
-[manifest]
-overrides = [{ name = "zha", git = "https://github.com/zigpy/zha?rev=6ff7e8d392773a3033a3a57db512be454648bd99" }]
-
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.7.1"
@@ -2111,8 +2108,8 @@ wheels = [
 
 [[package]]
 name = "zha"
-version = "2.4.3.post19+git.6ff7e8d3"
-source = { git = "https://github.com/zigpy/zha?rev=6ff7e8d392773a3033a3a57db512be454648bd99#6ff7e8d392773a3033a3a57db512be454648bd99" }
+version = "2.5.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "bellows" },
@@ -2123,6 +2120,10 @@ dependencies = [
     { name = "zigpy-zigate" },
     { name = "zigpy-ziggurat" },
     { name = "zigpy-znp" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/aa/e7/7cc6032f9fddf8125fe8b6f0328a1b70828e113d8fe4bc61e22c8d8dc015/zha-2.5.0.tar.gz", hash = "sha256:751b16b525ec7a0738e3dfc4ffa45e4c66074bdd896fc267dc3a1eb4af75d07e", size = 312898, upload-time = "2026-11-25T12:54:34.192Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/50/282508b49b4f2a16bd84ea3682697dd434392db45cefe1fa24d38da60427/zha-2.5.0-py3-none-any.whl", hash = "sha256:810b2cf55f38e5eaef2d2f7a5a5dca64775d98cc72f4b7706be51f64e77ac4ff", size = 210130, upload-time = "2026-11-25T12:54:32.788Z" },
 ]
 
 [[package]]
@@ -2260,7 +2261,7 @@ wheels = [
 
 [[package]]
 name = "zigpy-znp"
-version = "1.1.1"
+version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "coloredlogs" },
@@ -2268,7 +2269,7 @@ dependencies = [
     { name = "voluptuous" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/5a/ed90178a3c25f8731c9e4249785514a38860d7677255038bb8860b8e9b31/zigpy_znp-1.1.1.tar.gz", hash = "sha256:95edd2eed8432f27d59177d292f8ef56d897c722885b757510ca2cdc1eca9250", size = 116279, upload-time = "2026-09-08T17:46:06.853Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/cc/df54568ab0f2863cd0e27032353b9536e14d85f734c9aca2bc9519054e4b/zigpy_znp-1.1.2.tar.gz", hash = "sha256:4b59ebdd74c3f7d56fa5a6b67b51b8ac224201b1ee527adcfef71c51080ebf47", size = 116494, upload-time = "2026-11-25T11:45:35.795Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/09/eac8fad0e3adf53703f87a754f3432140d8e6177f08c905ec26d043a86da/zigpy_znp-1.1.1-py3-none-any.whl", hash = "sha256:8860dc834048d321a94ce06fde648274f27797b9474d1c980a77aee25b8ef97c", size = 119295, upload-time = "2026-09-08T17:46:05.688Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/cc/8c7e6907472fcabf5f4717d92478cc42c75f7252c55ccf008a56f02da177/zigpy_znp-1.1.2-py3-none-any.whl", hash = "sha256:3311a5060ef133834e15b1680ff37e6092539a47edf85a221ae44a975dcde5f1", size = 119527, upload-time = "2026-11-25T11:45:34.749Z" },
 ]

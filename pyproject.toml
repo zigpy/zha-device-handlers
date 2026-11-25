@@ -38,12 +38,6 @@ dev = [
     "time-machine>=2,<3",
 ]
 
-[tool.uv]
-# zha 2.5.0 isn't released yet: build against its dev commit until it is
-override-dependencies = [
-    "zha @ git+https://github.com/zigpy/zha@6ff7e8d392773a3033a3a57db512be454648bd99",
-]
-
 [tool.setuptools-git-versioning]
 enabled = true
 
