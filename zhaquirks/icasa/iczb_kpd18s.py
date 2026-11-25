@@ -47,6 +47,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.icasa import ON_OFF_BUTTON_EVENT_ENTITIES, scene_button_event_entities
 from zhaquirks.legacy import CustomDevice
 
 
@@ -205,3 +206,8 @@ class IcasaKPD18S(CustomDevice):
             PARAMS: {"group_id": 0, "scene_id": 6},
         },
     }
+
+    button_event_entities = (
+        *ON_OFF_BUTTON_EVENT_ENTITIES,
+        *scene_button_event_entities(6),
+    )
