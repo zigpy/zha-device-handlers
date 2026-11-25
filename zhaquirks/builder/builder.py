@@ -1308,8 +1308,9 @@ class QuirkBuilder:
 
         Entities on the given endpoints belong to the child device, except entities of
         device-level clusters (e.g. battery, firmware). Single entities can be assigned
-        with the `child_device_id` argument of the entity methods and of
-        `change_entity_metadata` instead, which also overrides the device-level rule.
+        with the `child_device_id` argument of the entity methods, or the
+        `new_child_device_id` argument of `change_entity_metadata`, instead, which also
+        overrides the device-level rule.
 
         Defining a child device replaces the automatic split of an allowlisted device
         in ZHA, and entities can only refer to child devices the quirk defines. To keep
