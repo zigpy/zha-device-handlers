@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 
 from tests.common import ButtonEventRecorder
 from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
+from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.builder.discovery import QUIRKS_ENTITY_META_TO_ENTITY_CLASS
 from zhaquirks.builder.metadata import ButtonEventMetadata
 from zhaquirks.const import (
@@ -556,6 +557,24 @@ async def test_button_event_failing_entity(
     assert "entity failed" in caplog.text
 
 
+async def test_button_event_trigger_missing_on_device(
+    zigpy_device: zigpy.device.Device,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that an entity whose trigger the ZHA device lacks is skipped."""
+    registry = DeviceRegistry()
+    remote_quirk().add_to_registry(registry)
+    monkeypatch.setattr(
+        QuirkV2Device, "device_automation_triggers", property(lambda self: {})
+    )
+    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+
+    # The off button matches event data, the on button uses a trigger
+    assert list(recorder.entities) == ["button_off"]
+    assert "has no device automation trigger" in caplog.text
+
+
 def test_button_event_frozen() -> None:
     """Test that button event data is frozen."""
     event = ButtonEvent(
@@ -681,6 +700,20 @@ HOLD = ButtonEvent(
             ButtonEvent(
                 event_type=ButtonEventType.PRESS_END,
                 event_data={COMMAND: COMMAND_MOVE_ON_OFF, "params": {"move_mode": 0}},
+            ),
+        ],
+        # Nested data covers the same nested data with more keys
+        [
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_MOVE_ON_OFF, "params": {"move_mode": 0}},
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                event_data={
+                    COMMAND: COMMAND_MOVE_ON_OFF,
+                    "params": {"move_mode": 0, "rate": 50},
+                },
             ),
         ],
         # Trigger data keeps lists, which cover the same items in a tuple
