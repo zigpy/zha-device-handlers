@@ -1012,6 +1012,16 @@ class TuyaPowerConfigurationCluster4AA(PowerConfiguration, TuyaLocalCluster):
     }
 
 
+class TuyaPowerConfigurationCluster1CR123A(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 1 CR123A."""
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.CR123A,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 30,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
+    }
+
+
 class TuyaPowerConfigurationClusterOther(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with other."""
 
