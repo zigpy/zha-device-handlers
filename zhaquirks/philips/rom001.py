@@ -47,9 +47,9 @@ class PhilipsRom001RemoteCluster(PhilipsRemoteCluster):
     }
 
     PRESS_TYPES: dict[int, PressType] = {
-        # We omit "short_press" and "short_release" on purpose, so it
-        # won't interfere with simulated multi-press events. We emit
-        # them in the multi-press code later on.
+        # SHORT_PRESS (0) and SHORT_RELEASE (2) are intentionally not
+        # in PRESS_TYPES — they are emitted via SIMULATE_SHORT_EVENTS,
+        # see PhilipsRemoteCluster.
         # 0: SHORT_PRESS,
         1: PressType(LONG_PRESS, COMMAND_HOLD),
         # 2: SHORT_RELEASE,

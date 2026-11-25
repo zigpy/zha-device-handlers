@@ -180,8 +180,9 @@ class PhilipsRemoteCluster(CustomCluster):
 
     # The press types the device reports when the button goes down (0) and when it
     # is released after a short press (2). They are sent as they arrive, under their
-    # own names, as the press and short release events are only sent once the
-    # multi-press window has passed. Press types in `PRESS_TYPES` are sent already.
+    # own names, for the button event entities, as the short release and multi-press
+    # events are only sent once the multi-press window has passed. Press types in
+    # `PRESS_TYPES` are sent already.
     NATIVE_PRESS_TYPES: dict[int, str] = {
         0: COMMAND_M_INITIAL_PRESS,
         2: COMMAND_PRESS_RELEASE,
@@ -357,8 +358,8 @@ class PhilipsRemoteCluster(CustomCluster):
 
         The device reports when a button goes down, when it is released after a
         short press, while it is held (repeatedly) and when it is released after
-        being held. The press and multi-press events derived with the press queue
-        are not used, as they are only sent after a delay.
+        being held. The short release and multi-press events derived with the
+        press queue are not used, as they are only sent after a delay.
 
         `names` holds the entity naming (`unique_id_suffix`, `translation_key`,
         `fallback_name` and `translation_placeholders`) of each button.
