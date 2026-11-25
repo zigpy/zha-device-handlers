@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import itertools
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -12,13 +11,11 @@ from zha.application.platforms.light import Light
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.profiles.zha
-import zigpy.types as t
 from zigpy.zcl import (
     AttributeReadEvent,
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     AttributeWrittenEvent,
-    ClusterType,
     foundation,
 )
 
@@ -133,58 +130,3 @@ class ButtonEventRecorder:
         ]
         self.events.clear()
         return events
-
-
-_TSNS = itertools.cycle(range(256))
-
-
-def send_command(
-    device: zigpy.device.Device,
-    endpoint_id: int,
-    cluster_id: int,
-    command: str,
-    *args: Any,
-    cluster_type: ClusterType = ClusterType.Client,
-    manufacturer: int | None = None,
-    tsn: int | None = None,
-    **kwargs: Any,
-) -> None:
-    """Receive a cluster command from one of the device's clusters, as a ZCL frame.
-
-    A client cluster of the device sends the commands its server receives, a server
-    cluster the ones its client receives. Without a `tsn`, every frame gets a new
-    one, as zigpy drops a repeated one as a duplicate.
-    """
-    if tsn is None:
-        tsn = next(_TSNS)
-
-    endpoint = device.endpoints[endpoint_id]
-
-    if cluster_type == ClusterType.Client:
-        cluster = endpoint.out_clusters[cluster_id]
-        commands = cluster.server_commands
-        direction = foundation.Direction.Client_to_Server
-    else:
-        cluster = endpoint.in_clusters[cluster_id]
-        commands = cluster.client_commands
-        direction = foundation.Direction.Server_to_Client
-
-    command_def = next(c for c in commands.values() if c.name == command)
-    hdr = foundation.ZCLHeader.cluster(
-        tsn=tsn,
-        command_id=command_def.id,
-        manufacturer=manufacturer,
-        direction=direction,
-    )
-    payload = hdr.serialize() + command_def.schema(*args, **kwargs).serialize()
-
-    device.packet_received(
-        t.ZigbeePacket(
-            src_ep=endpoint_id,
-            dst_ep=1,
-            tsn=tsn,
-            profile_id=endpoint.profile_id or zigpy.profiles.zha.PROFILE_ID,
-            cluster_id=cluster_id,
-            data=t.SerializableBytes(payload),
-        )
-    )
