@@ -1,7 +1,9 @@
 """Tuya 1,2,3 gang no neutral light switch."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ReportingConfig
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.foundation import Status, ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -18,6 +20,22 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
+
+
+class TuyaNoNeutralOnOffCluster(TuyaZBOnOffAttributeCluster):
+    """On/Off cluster that does not configure attribute reporting.
+
+    Once attribute reporting is configured, the firmware of these no neutral switches
+    reboots about two minutes after the relay is switched on, which turns the light
+    off (and back on, depending on the power on state). The switches report their
+    state on their own, so binding the cluster is enough.
+    """
+
+    async def configure_reporting_multiple(
+        self, config: dict[ZCLAttributeDef, ReportingConfig]
+    ) -> dict[ZCLAttributeDef, Status]:
+        """Skip configuring attribute reporting."""
+        return dict.fromkeys(config, Status.UNREPORTABLE_ATTRIBUTE)
 
 
 # NoNeutralSwitch family = without tuya cluster and Identify.
@@ -57,7 +75,7 @@ class TuyaSingleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -118,7 +136,7 @@ class TuyaDoubleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -128,7 +146,7 @@ class TuyaDoubleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -203,7 +221,7 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -213,7 +231,7 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -223,7 +241,7 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -269,7 +287,7 @@ class TuyaSingleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -332,7 +350,7 @@ class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -342,7 +360,7 @@ class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -419,7 +437,7 @@ class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -429,7 +447,7 @@ class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -439,7 +457,7 @@ class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaNoNeutralOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
