@@ -1,9 +1,12 @@
 """Fixtures for all tests."""
 
+from collections.abc import AsyncGenerator
 import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from zha.application.gateway import Gateway
+from zha.application.helpers import CoordinatorConfiguration, ZHAConfiguration, ZHAData
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.application
 import zigpy.device
@@ -96,6 +99,26 @@ def app_controller_mock():
     config = {"device": {"path": "/dev/ttyUSB0"}, "database": None}
     app = MockApp(config)
     return app
+
+
+@pytest.fixture(name="zha_gateway")
+async def zha_gateway_fixture(
+    MockAppController: MockApp,
+) -> AsyncGenerator[Gateway, None]:
+    """ZHA gateway driving the mock controller application."""
+    gateway = Gateway(
+        ZHAData(
+            config=ZHAConfiguration(
+                coordinator_configuration=CoordinatorConfiguration(path="/dev/ttyUSB0"),
+            )
+        )
+    )
+    gateway.application_controller = MockAppController
+
+    try:
+        yield gateway
+    finally:
+        await gateway.shutdown()
 
 
 @pytest.fixture
