@@ -84,6 +84,8 @@ for ep, button in BUTTONS.items():
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, button),
+                # A repeated hold (not confirmed on hardware) fires once
+                repeats=True,
             ),
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_END,
