@@ -408,7 +408,7 @@ Modify properties of entities ZHA creates by default:
     new_entity_category=EntityType.DIAGNOSTIC,
 )
 ```
-Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_translation_placeholders`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_entity_registry_enabled_default`, `new_fallback_name`. Here `cluster_type` defaults to `ClusterType.Server` when `cluster_id` is set.
+Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_translation_placeholders`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_entity_registry_enabled_default`, `new_fallback_name`, `new_child_device_id`. Here `cluster_type` defaults to `ClusterType.Server` when `cluster_id` is set.
 
 **Custom Entity Classes:**
 Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
@@ -463,6 +463,24 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
 ```
 
 Removing entities: `.removes_entity(EntityFilter(...))` with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
+
+**Child Devices:**
+Expose logical parts of a device, e.g. the gangs of a wall switch, as child devices (sub-devices in HA). Entities on the endpoints of a child device belong to it, except entities of device-level clusters (Basic, Power Configuration, Identify, OTA, ...), which stay on the main device:
+```python
+.child_device("left", endpoint_id=1, translation_key="left", fallback_name="Left")
+.child_device("right", endpoint_id=2, translation_key="right", fallback_name="Right")
+
+# Assign a single entity explicitly, e.g. a Tuya data point entity on endpoint 1
+.tuya_switch(dp_id=102, attribute_name="child_lock_2", ..., child_device_id="right")
+
+# Keep a default entity of a child device's endpoint on the main device
+.change_entity_metadata(
+    endpoint_id=1,
+    cluster_id=Metering.cluster_id,
+    new_child_device_id=None,
+)
+```
+Defining child devices replaces the automatic split ZHA applies to allowlisted multi-channel devices; `.disable_child_devices()` turns that split off. The main device and each child device can have one primary entity; `add_to_registry()` checks this, including `change_entity_metadata` changes of the quirk's own entities (`new_child_device_id`, `new_primary`), skips entities `removes_entity` removes, and leaves an entity to ZHA when it can't tell whether such a change or removal applies to it (e.g. a `function` filter, or a `unique_id_suffix` filter after a `new_unique_id` change it can't place) or when a `new_primary=True` change promotes it on a quirk that leaves child devices to ZHA's automatic split. A new child device `translation_key` also needs a translation in Home Assistant, otherwise `fallback_name` is used.
 
 ### Tuya Devices (TuyaQuirkBuilder)
 
