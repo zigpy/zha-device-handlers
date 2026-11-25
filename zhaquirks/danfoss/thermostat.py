@@ -30,12 +30,12 @@ Broken ZCL attributes:
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-import time
 from typing import Any
 
 from zha.quirks import DANFOSS_ALLY_THERMOSTAT
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.time import TimeSnapshot
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -466,17 +466,22 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
     async def write_time(self):
         """Write time info to Time Cluster.
 
-        It supports adjusting for daylight saving time, but this is not trivial to retrieve with the modules:
-            zoneinfo, datetime or time
+        ZCL TimeZone is the offset east of UTC (Standard Time = Time + TimeZone), excluding
+        DST, which is given by DstStart, DstEnd and DstShift. The configured timezone of the
+        application is used when set, else the system's local time.
         """
-        epoch = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=UTC)
-        current_time = (datetime.now(UTC) - epoch).total_seconds()
+        snapshot = TimeSnapshot.compute(
+            self.endpoint.device.application.local_timezone, datetime.now(UTC)
+        )
 
         await self.write_attributes(
             {
-                "time": current_time,
+                "time": snapshot.time,
                 "time_status": 0b00000010,  # only bit 1 can be set
-                "time_zone": time.timezone,
+                "time_zone": snapshot.time_zone,
+                "dst_start": snapshot.dst_start,
+                "dst_end": snapshot.dst_end,
+                "dst_shift": snapshot.dst_shift,
             }
         )
 
