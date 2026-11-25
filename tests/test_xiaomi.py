@@ -1,13 +1,19 @@
 """Tests for xiaomi."""
 
 import asyncio
+import datetime
 import itertools
 import logging
 import math
+import struct
 from typing import Any
 from unittest import mock
+import zoneinfo
 
 import pytest
+from zha.application import Platform
+from zha.application.helpers import write_attributes_safe
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -27,6 +33,7 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -43,6 +50,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
@@ -120,6 +128,21 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+from zhaquirks.xiaomi.aqara.switch_aeu001 import (
+    ButtonLayout,
+    ButtonOperationMode,
+    ButtonRelay,
+    ElderMode,
+    LocalTimeCluster,
+    LVBytesString,
+    OppleCluster as DisplaySwitchOppleCluster,
+    ProximitySensitivity,
+    ScreensaverStyle,
+    ShowMode,
+    StartupOnOff,
+    Theme,
+    WeatherCondition,
+)
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -3514,3 +3537,693 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+def test_aqara_display_switch_endpoints(zigpy_device_from_v2_quirk):
+    """Test Aqara Display Switch V1 EU quirk creates all expected endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    # Verify all endpoints exist
+    assert 1 in device.endpoints
+    assert 2 in device.endpoints
+    assert 3 in device.endpoints
+    assert 4 in device.endpoints
+    assert 21 in device.endpoints
+
+    # Endpoint 1: Primary switch with metering
+    assert OnOff.cluster_id in device.endpoints[1].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[1].in_clusters
+
+    # Endpoint 2: Secondary switch
+    assert OnOff.cluster_id in device.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
+
+    # Endpoint 3: Button 1 (decoupled mode)
+    assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+    # Endpoint 4: Button 2 (decoupled mode)
+    assert MultistateInput.cluster_id in device.endpoints[4].in_clusters
+
+    # Endpoint 21: Analog input
+    assert AnalogInput.cluster_id in device.endpoints[21].in_clusters
+
+
+@pytest.mark.parametrize("endpoint_id", [1, 2, 3, 4])
+def test_aqara_display_switch_button_events(zigpy_device_from_v2_quirk, endpoint_id):
+    """Test Aqara Display Switch button press events."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    multistate_cluster = device.endpoints[endpoint_id].multistate_input
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    # Simulate single press (value=1)
+    multistate_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, 1
+    )
+
+    # Verify ZHA send event was called with correct action
+    assert listener.zha_send_event.call_count == 1
+    expected_action = f"button_{endpoint_id}_single"
+    assert listener.zha_send_event.call_args[0][0] == expected_action
+    assert listener.zha_send_event.call_args[0][1]["endpoint_id"] == endpoint_id
+    assert listener.zha_send_event.call_args[0][1]["value"] == 1
+
+
+def test_aqara_display_switch_opple_cluster(zigpy_device_from_v2_quirk):
+    """Test Aqara Display Switch OppleCluster attribute definitions."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+    cluster_listener = ClusterListener(opple_cluster)
+
+    # Test startup_on_off attribute update
+    opple_cluster.update_attribute(
+        DisplaySwitchOppleCluster.AttributeDefs.startup_on_off.id,
+        StartupOnOff.RestorePrevious,
+    )
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == DisplaySwitchOppleCluster.AttributeDefs.startup_on_off.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == StartupOnOff.RestorePrevious
+
+    # Test button_operation_mode attribute update
+    opple_cluster.update_attribute(
+        DisplaySwitchOppleCluster.AttributeDefs.button_operation_mode.id,
+        ButtonOperationMode.Decoupled,
+    )
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == DisplaySwitchOppleCluster.AttributeDefs.button_operation_mode.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == ButtonOperationMode.Decoupled
+
+    # Test theme attribute update
+    opple_cluster.update_attribute(
+        DisplaySwitchOppleCluster.AttributeDefs.theme.id,
+        Theme.Option2,
+    )
+    assert len(cluster_listener.attribute_updates) == 3
+    assert (
+        cluster_listener.attribute_updates[2][0]
+        == DisplaySwitchOppleCluster.AttributeDefs.theme.id
+    )
+    assert cluster_listener.attribute_updates[2][1] == Theme.Option2
+
+
+def test_lvbytes_string_from_string():
+    """Test LVBytesString converts string to UTF-8 bytes."""
+    result = LVBytesString("hello")
+    assert result == b"hello"
+    assert isinstance(result, LVBytesString)
+
+
+def test_lvbytes_string_from_bytes():
+    """Test LVBytesString accepts bytes directly."""
+    result = LVBytesString(b"hello")
+    assert result == b"hello"
+
+
+def test_lvbytes_string_empty():
+    """Test LVBytesString with empty string."""
+    result = LVBytesString("")
+    assert result == b""
+
+
+def test_lvbytes_string_unicode():
+    """Test LVBytesString with unicode characters."""
+    result = LVBytesString("héllo")
+    assert result == "héllo".encode()
+
+
+def test_display_switch_enums():
+    """Test all enum classes have expected values."""
+    # StartupOnOff
+    assert StartupOnOff.On == 0x00
+    assert StartupOnOff.RestorePrevious == 0x01
+    assert StartupOnOff.Off == 0x02
+    assert StartupOnOff.ReversePrevious == 0x03
+
+    # ButtonOperationMode
+    assert ButtonOperationMode.Disabled == 0x00
+    assert ButtonOperationMode.ControlRelay == 0x01
+    assert ButtonOperationMode.Decoupled == 0x02
+    assert ButtonOperationMode.WirelessButton == 0x04
+
+    # Theme
+    assert Theme.Option1 == 0x00
+    assert Theme.Option2 == 0x01
+
+    # ShowMode
+    assert ShowMode.IconAndText == 0x01
+    assert ShowMode.IconOnly == 0x02
+    assert ShowMode.TextOnly == 0x03
+
+    # ScreensaverStyle
+    assert ScreensaverStyle.DigitalClock == 0x01
+    assert ScreensaverStyle.WeatherConditions == 0x02
+    assert ScreensaverStyle.IndoorEnvironment == 0x03
+
+    # ProximitySensitivity
+    assert ProximitySensitivity.Near == 0x01
+    assert ProximitySensitivity.Far == 0x05
+
+    # ElderMode
+    assert ElderMode.Off == 0x03
+    assert ElderMode.On == 0x05
+
+    # ButtonRelay
+    assert ButtonRelay.Relay1 == 0x01
+    assert ButtonRelay.Relay2 == 0x02
+
+    # ButtonLayout
+    assert ButtonLayout.Button1 == 0x01
+    assert ButtonLayout.Button2 == 0x02
+    assert ButtonLayout.Button3 == 0x04
+    assert ButtonLayout.Button4 == 0x08
+
+
+def test_weather_condition_enum():
+    """Test WeatherCondition enum values."""
+    assert WeatherCondition.Sunny == 0x00
+    assert WeatherCondition.Clear == 0x01
+    assert WeatherCondition.Cloudy == 0x04
+    assert WeatherCondition.LightRain == 0x0D
+    assert WeatherCondition.Foggy == 0x1E
+    assert WeatherCondition.Tornado == 0x24
+    assert WeatherCondition.Unknown == 0x25
+
+
+def test_multistate_input_cluster_single_press(zigpy_device_from_v2_quirk):
+    """Test MultistateInputCluster only fires event for single press (value=1)."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    multistate_cluster = device.endpoints[1].multistate_input
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    # Value != 1 should NOT trigger event
+    multistate_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, 0
+    )
+    assert listener.zha_send_event.call_count == 0
+
+    # Value = 1 should trigger event
+    multistate_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, 1
+    )
+    assert listener.zha_send_event.call_count == 1
+
+    # Other values should not trigger event
+    multistate_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, 2
+    )
+    assert listener.zha_send_event.call_count == 1
+
+
+def test_opple_cluster_instance_weather_seq(zigpy_device_from_v2_quirk):
+    """Test OppleCluster uses instance-level weather sequence counter."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    # Verify instance has _weather_seq initialized to 0
+    assert hasattr(opple_cluster, "_weather_seq")
+    assert opple_cluster._weather_seq == 0
+
+
+def test_opple_cluster_build_condition_packet(zigpy_device_from_v2_quirk):
+    """Test OppleCluster builds correct weather condition packets."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    # Build a condition packet for Cloudy (code 4)
+    packet = opple_cluster._build_condition_packet(4)
+
+    # Check packet structure
+    assert len(packet) == 25
+    assert packet[0:4] == bytes([0xAA, 0x71, 0x13, 0x44])  # Header
+    assert packet[4] == 1  # First sequence number
+    assert packet[5] == (0x8E - 1) & 0xFF  # Checksum
+    assert packet[-4:] == bytes([0x00, 0x00, 0x00, 0x04])  # Payload: condition code 4
+
+    # Build another packet to verify sequence increments
+    packet2 = opple_cluster._build_condition_packet(0)
+    assert packet2[4] == 2  # Second sequence number
+    assert packet2[5] == (0x8E - 2) & 0xFF  # Updated checksum
+
+
+def test_opple_cluster_build_null_packet(zigpy_device_from_v2_quirk):
+    """Test OppleCluster builds correct null packets."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    packet = opple_cluster._build_null_packet()
+
+    # Check null packet payload is all zeros
+    assert packet[-4:] == bytes([0x00, 0x00, 0x00, 0x00])
+
+
+def test_opple_cluster_build_temperature_packet(zigpy_device_from_v2_quirk):
+    """Test OppleCluster builds correct temperature packets."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    # Build packet for 22.5 degrees
+    packet = opple_cluster._build_temperature_packet(22.5)
+
+    # Verify temperature is encoded as IEEE 754 big-endian float
+    expected_temp_bytes = struct.pack(">f", 22.5)
+    assert packet[-4:] == expected_temp_bytes
+
+
+def test_opple_cluster_get_ieee_bytes(zigpy_device_from_v2_quirk):
+    """Test OppleCluster extracts last 6 bytes of IEEE address."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    ieee_bytes = opple_cluster._get_ieee_bytes()
+
+    # Should be 6 bytes (last 6 of 8-byte IEEE address)
+    assert len(ieee_bytes) == 6
+
+
+def _display_switch_opple_cluster(zigpy_device_from_v2_quirk):
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    return device.endpoints[1].in_clusters[DisplaySwitchOppleCluster.cluster_id]
+
+
+def _mock_write(status=foundation.Status.SUCCESS, attrid=None):
+    return mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)]
+        ]
+    )
+
+
+def _written(write_mock):
+    return [
+        (attr.attrid, attr.value.value)
+        for call in write_mock.mock_calls
+        for attr in call.args[0]
+    ]
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "weather_condition",
+        DisplaySwitchOppleCluster.AttributeDefs.weather_condition.id,
+        DisplaySwitchOppleCluster.AttributeDefs.weather_condition,
+    ],
+)
+@pytest.mark.parametrize("value", [WeatherCondition.Cloudy, 4, "Cloudy"])
+async def test_opple_cluster_write_attributes_weather_condition(
+    zigpy_device_from_v2_quirk, attr, value
+):
+    """Test writing weather_condition sends a condition and a null packet."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+    weather_data_id = DisplaySwitchOppleCluster.AttributeDefs.weather_data.id
+    attributes = {attr: value}
+
+    with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
+        result = await opple_cluster.write_attributes(attributes)
+
+    written = _written(m)
+    assert [attrid for attrid, _ in written] == [weather_data_id, weather_data_id]
+    assert written[0][1][17:19] == b"\x0d\x02"
+    assert written[0][1][-1] == WeatherCondition.Cloudy
+    assert written[1][1][17:19] == b"\x00\x06"
+    assert result == [
+        [
+            foundation.WriteAttributesStatusRecord(
+                status=foundation.Status.SUCCESS,
+                attrid=DisplaySwitchOppleCluster.AttributeDefs.weather_condition.id,
+            )
+        ]
+    ]
+    assert attributes == {attr: value}
+    assert opple_cluster.get(weather_data_id) is None
+    assert opple_cluster.get("weather_condition") == WeatherCondition.Cloudy
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "weather_temperature",
+        DisplaySwitchOppleCluster.AttributeDefs.weather_temperature.id,
+    ],
+)
+async def test_opple_cluster_write_attributes_weather_temperature(
+    zigpy_device_from_v2_quirk, attr
+):
+    """Test writing weather_temperature sends a temperature packet."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+
+    with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
+        result = await opple_cluster.write_attributes({attr: -55})
+
+    written = _written(m)
+    assert len(written) == 1
+    assert written[0][0] == DisplaySwitchOppleCluster.AttributeDefs.weather_data.id
+    assert written[0][1][17:19] == b"\x00\x04"
+    assert struct.unpack(">f", written[0][1][-4:])[0] == pytest.approx(-5.5)
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert (
+        result[0][0].attrid
+        == DisplaySwitchOppleCluster.AttributeDefs.weather_temperature.id
+    )
+
+
+async def test_opple_cluster_write_attributes_invalid_weather_condition(
+    zigpy_device_from_v2_quirk,
+):
+    """Test writing an unknown weather condition name raises an error."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+
+    with pytest.raises(ValueError, match="Invalid weather condition"):
+        await opple_cluster.write_attributes({"weather_condition": "InvalidCondition"})
+
+
+async def test_opple_cluster_write_attributes_weather_failure(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a failed weather packet write is reported for the virtual attribute."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+
+    with mock.patch.object(
+        opple_cluster,
+        "_write_attributes",
+        _mock_write(
+            foundation.Status.UNSUPPORTED_ATTRIBUTE,
+            DisplaySwitchOppleCluster.AttributeDefs.weather_data.id,
+        ),
+    ) as m:
+        result = await opple_cluster.write_attributes(
+            {"weather_condition": WeatherCondition.Sunny}
+        )
+
+    assert m.call_count == 1
+    assert result == [
+        [
+            foundation.WriteAttributesStatusRecord(
+                status=foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                attrid=DisplaySwitchOppleCluster.AttributeDefs.weather_condition.id,
+            )
+        ]
+    ]
+
+
+async def test_opple_cluster_write_attributes_combined(zigpy_device_from_v2_quirk):
+    """Test writing weather and regular attributes together."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+    attr_defs = DisplaySwitchOppleCluster.AttributeDefs
+
+    with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
+        result = await opple_cluster.write_attributes(
+            {
+                "weather_condition": WeatherCondition.Sunny,
+                "weather_temperature": 20,
+                attr_defs.display_brightness.id: 80,
+            }
+        )
+
+    assert [attrid for attrid, _ in _written(m)] == [
+        attr_defs.weather_data.id,
+        attr_defs.weather_data.id,
+        attr_defs.weather_data.id,
+        attr_defs.display_brightness.id,
+    ]
+    assert [record.attrid for record in result[0]] == [
+        attr_defs.weather_condition.id,
+        attr_defs.weather_temperature.id,
+        attr_defs.display_brightness.id,
+    ]
+    assert opple_cluster.get(attr_defs.display_brightness.id) == 80
+
+
+def test_opple_cluster_weather_seq_wraps(zigpy_device_from_v2_quirk):
+    """Test OppleCluster weather sequence counter wraps at 255."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
+
+    # Set sequence to 255
+    opple_cluster._weather_seq = 255
+
+    packet = opple_cluster._build_condition_packet(0)
+
+    # Sequence should have wrapped to 0
+    assert packet[4] == 0
+    assert opple_cluster._weather_seq == 0
+
+
+def test_aqara_display_switch_heartbeat_power(zigpy_device_from_v2_quirk):
+    """Test the heartbeat updates energy, voltage and power."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    endpoint = device.endpoints[1]
+    metering_listener = ClusterListener(endpoint.smartenergy_metering)
+    electrical_listener = ClusterListener(endpoint.electrical_measurement)
+
+    endpoint.opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({149: 1.5, 150: 2301, 152: 12}),
+    )
+
+    assert (
+        dict(metering_listener.attribute_updates)[
+            Metering.AttributeDefs.current_summ_delivered.id
+        ]
+        == 1500
+    )
+    electrical = dict(electrical_listener.attribute_updates)
+    assert electrical[ElectricalMeasurement.AttributeDefs.rms_voltage.id] == (
+        pytest.approx(230.1)
+    )
+    assert electrical[ElectricalMeasurement.AttributeDefs.active_power.id] == 120
+
+
+@pytest.mark.parametrize("value", [22.5, -0.3, 18])
+async def test_aqara_display_switch_weather_entities_on_gateway(value):
+    """Test the weather entities are created and write through their setters."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "aqara-lumi-switch-aeu001-0x00000d25.json", DEVICE_REGISTRY
+        )
+        entities = {
+            getattr(entity, "_attribute_name", None): entity
+            for entity in device.platform_entities.values()
+        }
+        temperature = entities["weather_temperature"]
+        condition = entities["weather_condition"]
+        opple_cluster = device.device.endpoints[1].opple_cluster
+
+        assert temperature.PLATFORM == Platform.NUMBER
+        assert condition.PLATFORM == Platform.SELECT
+        assert temperature.native_value is None
+        assert condition.current_option is None
+
+        with mock.patch.object(
+            opple_cluster, "_write_attributes", _mock_write()
+        ) as write_mock:
+            await temperature.async_set_native_value(value)
+            await condition.async_select_option("PartlyCloudy")
+
+        packets = [packet for _, packet in _written(write_mock)]
+        assert struct.unpack(">f", packets[0][-4:])[0] == pytest.approx(value)
+        assert packets[1][-1] == WeatherCondition.PartlyCloudy
+        assert temperature.native_value == pytest.approx(value)
+        assert condition.current_option == "PartlyCloudy"
+
+
+async def test_opple_cluster_write_attributes_weather_ordering(
+    zigpy_device_from_v2_quirk,
+):
+    """Test overlapping weather writes do not interleave their packets."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+
+    async def slow_write(*args, **kwargs):
+        await asyncio.sleep(0)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        opple_cluster, "_write_attributes", mock.AsyncMock(side_effect=slow_write)
+    ) as m:
+        await asyncio.gather(
+            opple_cluster.write_attributes(
+                {"weather_condition": WeatherCondition.Sunny, "weather_temperature": 1}
+            ),
+            opple_cluster.write_attributes({"weather_temperature": 2}),
+        )
+
+    packets = [value for _, value in _written(m)]
+    assert [packet[4] for packet in packets] == [1, 2, 3, 4]
+    assert [struct.unpack(">f", packet[-4:])[0] for packet in packets[2:]] == [
+        pytest.approx(0.1),
+        pytest.approx(0.2),
+    ]
+
+
+async def test_aqara_display_switch_proximity(zigpy_device_from_v2_quirk):
+    """Test the latched proximity flag is held for the cooldown, then cleared."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    proximity_id = DisplaySwitchOppleCluster.AttributeDefs.proximity.id
+    listener = ClusterListener(opple_cluster)
+
+    with mock.patch("zhaquirks.xiaomi.aqara.switch_aeu001.PROXIMITY_HOLD_S", 0.01):
+        device.endpoints[2].opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        assert opple_cluster.get(proximity_id) == t.Bool.true
+        assert listener.attribute_updates == [(proximity_id, t.Bool.true)]
+
+        await asyncio.sleep(0.05)
+        assert opple_cluster.get(proximity_id) == t.Bool.false
+
+        opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        opple_cluster.update_attribute(proximity_id, t.Bool.false)
+        await asyncio.sleep(0.05)
+
+    assert listener.attribute_updates == [
+        (proximity_id, t.Bool.true),
+        (proximity_id, t.Bool.false),
+        (proximity_id, t.Bool.true),
+        (proximity_id, t.Bool.false),
+    ]
+
+
+async def test_aqara_display_switch_proximity_stale_cache(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a cached proximity value from before a restart reads as clear."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    proximity = DisplaySwitchOppleCluster.AttributeDefs.proximity
+    opple_cluster._attr_cache.set_value(proximity, t.Bool.true)
+
+    assert opple_cluster.get(proximity.name) == t.Bool.false
+
+    opple_cluster.update_attribute(proximity.id, t.Bool.true)
+    assert opple_cluster.get(proximity.name) == t.Bool.true
+    opple_cluster._proximity_timer.cancel()
+
+
+def test_aqara_display_switch_local_time(zigpy_device_from_v2_quirk):
+    """Test Time reads are answered with local time and no offset."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    time_cluster = device.endpoints[1].out_clusters[Time.cluster_id]
+    assert isinstance(time_cluster, LocalTimeCluster)
+
+    device.application.local_timezone = zoneinfo.ZoneInfo("Europe/Sofia")
+    attrs = Time.AttributeDefs
+    now = datetime.datetime(2026, 7, 1, 12, 0, tzinfo=datetime.UTC)
+
+    with mock.patch("zigpy.zcl.clusters.general.datetime") as dt:
+        dt.now.return_value = now
+        records = time_cluster._handle_read_attributes(
+            [
+                attrs.time.id,
+                attrs.time_status.id,
+                attrs.time_zone.id,
+                attrs.local_time.id,
+                attrs.standard_time.id,
+                attrs.dst_shift.id,
+            ]
+        )
+
+    values = {record.attrid: record.value.value for record in records}
+    local = t.UTCTime.from_datetime(now + datetime.timedelta(hours=3))
+    assert values == {
+        attrs.time.id: local,
+        attrs.time_status.id: 0x0D,
+        attrs.time_zone.id: 0,
+        attrs.local_time.id: local,
+        attrs.standard_time.id: local,
+        attrs.dst_shift.id: 0,
+    }
+
+
+async def test_aqara_display_switch_weather_entities(zigpy_device_from_v2_quirk):
+    """Test the weather entities write floats and read back from the cache."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+    attr_defs = DisplaySwitchOppleCluster.AttributeDefs
+    read_mock = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.ReadAttributeRecord(
+                    attrid=attr_defs.display_brightness.id,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(type=DataTypeId.uint8, value=80),
+                )
+            ]
+        ]
+    )
+
+    with mock.patch.object(opple_cluster, "_read_attributes", read_mock):
+        assert await opple_cluster.read_attributes(["weather_temperature"]) == ({}, {})
+
+        with mock.patch.object(
+            opple_cluster, "_write_attributes", _mock_write()
+        ) as write_mock:
+            await write_attributes_safe(opple_cluster, {"weather_temperature": 225})
+
+        assert struct.unpack(">f", _written(write_mock)[0][1][-4:])[0] == 22.5
+
+        success, failure = await opple_cluster.read_attributes(
+            ["weather_temperature", "display_brightness"]
+        )
+
+    assert success == {"weather_temperature": 225, "display_brightness": 80}
+    assert failure == {}
+    assert read_mock.call_args.args[0] == [attr_defs.display_brightness.id]
