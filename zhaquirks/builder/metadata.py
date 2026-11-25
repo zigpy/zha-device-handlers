@@ -9,7 +9,7 @@ classes take plain keyword arguments and know nothing about it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from enum import Enum
 from typing import Any
 
@@ -320,7 +320,11 @@ def _convert_event_data_paths(paths: Any) -> Any:
 
     return frozendict(
         {
-            name: tuple(path) if isinstance(path, list | tuple) else path
+            name: (
+                tuple(path)
+                if isinstance(path, Sequence) and not isinstance(path, str | bytes)
+                else path
+            )
             for name, path in paths.items()
         }
     )
