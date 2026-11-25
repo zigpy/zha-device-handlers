@@ -153,7 +153,9 @@ def test_tuya_spell_devices_valid():
                         break
 
         # an EnchantedDevice with the data query spell must also have a cluster subclassing TuyaNewManufCluster
-        if quirk.tuya_spell_data_query and not tuya_cluster_exists:
+        if (
+            quirk.tuya_spell_data_query or quirk.tuya_spell_data_query_on_announce
+        ) and not tuya_cluster_exists:
             pytest.fail(
                 f"{quirk} set Tuya data query spell but has no cluster subclassing `TuyaNewManufCluster` on endpoint 1"
             )
