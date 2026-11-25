@@ -1,11 +1,16 @@
 """Tests for Tuya Smoke Detector."""
 
+import asyncio
+from unittest import mock
+
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, tuya_smoke
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 zhaquirks.setup()
@@ -117,3 +122,113 @@ async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_v2_quirk):
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zone_status_id
     assert ias_listener.attribute_updates[1][1] == IasZone.ZoneStatus.Alarm_1
+
+
+def _pa44z_report(cluster, dp, value):
+    """Feed one datapoint report to the PA-44Z Tuya cluster."""
+    command = TuyaCommand(
+        status=0, tsn=1, datapoints=[TuyaDatapointData(dp, TuyaData(value))]
+    )
+    assert cluster.handle_get_data(command) == foundation.Status.SUCCESS
+
+
+@pytest.fixture
+async def pa44z(zigpy_device_from_v2_quirk, monkeypatch):
+    """PA-44Z device with short timers."""
+    monkeypatch.setattr(tuya_smoke, "ALARM_CLEAR_S", 0.2)
+    device = zigpy_device_from_v2_quirk("_TZE284_rccxox8p", "TS0601")
+    return device.endpoints[1]
+
+
+def _alarm(ep):
+    return ep.ias_zone.get(IasZone.AttributeDefs.zone_status.name)
+
+
+async def test_pa44z_alarm_clears_after_heartbeat_stops(pa44z):
+    """Smoke stays on while DP 101 = false reports arrive, then clears."""
+    tuya = pa44z.tuya_manufacturer
+    alarm = IasZone.ZoneStatus.Alarm_1
+
+    _pa44z_report(tuya, 1, t.enum8(0))
+    assert _alarm(pa44z) == alarm
+
+    for _ in range(3):
+        await asyncio.sleep(0.15)
+        _pa44z_report(tuya, 101, False)
+        assert _alarm(pa44z) == alarm
+
+    await asyncio.sleep(0.3)
+    assert _alarm(pa44z) == 0
+
+
+async def test_pa44z_self_test_done_clears_alarm(pa44z):
+    """DP 101 = true clears the alarm now; the value follows the device."""
+    tuya = pa44z.tuya_manufacturer
+
+    _pa44z_report(tuya, 1, t.enum8(0))
+    assert _alarm(pa44z) == IasZone.ZoneStatus.Alarm_1
+
+    _pa44z_report(tuya, 101, True)
+    assert _alarm(pa44z) == 0
+    assert tuya.get("self_test_done")
+
+    # No reset of its own: stays on until the device reports false.
+    await asyncio.sleep(0.3)
+    assert tuya.get("self_test_done")
+    _pa44z_report(tuya, 101, False)
+    assert not tuya.get("self_test_done")
+
+
+async def test_pa44z_heartbeat_without_alarm_does_nothing(pa44z):
+    """DP 101 = false without an active alarm does not raise one."""
+    _pa44z_report(pa44z.tuya_manufacturer, 101, False)
+    await asyncio.sleep(0.3)
+    assert not _alarm(pa44z)
+
+
+async def test_pa44z_smoke_report_alone_never_clears(pa44z):
+    """Without heartbeats (DP 101 = false) the timer never clears the alarm."""
+    _pa44z_report(pa44z.tuya_manufacturer, 1, t.enum8(0))
+    await asyncio.sleep(0.5)
+    assert _alarm(pa44z) == IasZone.ZoneStatus.Alarm_1
+
+
+async def test_pa44z_end_report_clears_and_stops_timer(pa44z):
+    """A DP 1 end report clears the alarm and stops the clear timer."""
+    tuya = pa44z.tuya_manufacturer
+    _pa44z_report(tuya, 1, t.enum8(0))
+    _pa44z_report(tuya, 101, False)
+    assert tuya._alarm_handle is not None
+
+    _pa44z_report(tuya, 1, t.enum8(1))
+    assert _alarm(pa44z) == 0
+    assert tuya._alarm_handle is None
+
+
+async def test_pa44z_restored_alarm_stays_on(pa44z):
+    """An alarm restored after a restart is not cleared without a heartbeat."""
+    pa44z.ias_zone.update_attribute(
+        IasZone.AttributeDefs.zone_status.name, IasZone.ZoneStatus.Alarm_1
+    )
+    await asyncio.sleep(0.5)
+    assert _alarm(pa44z) == IasZone.ZoneStatus.Alarm_1
+
+    # A heartbeat after the restart starts the timer as usual.
+    _pa44z_report(pa44z.tuya_manufacturer, 101, False)
+    await asyncio.sleep(0.3)
+    assert _alarm(pa44z) == 0
+
+
+@pytest.mark.parametrize("value", [True, False])
+async def test_pa44z_silence_switch_writes_dp16(pa44z, value):
+    """Silence alarm switch writes DP 16 with the switch state."""
+    tuya = pa44z.tuya_manufacturer
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req:
+        await tuya.write_attributes({"silence_alarm": value})
+        await wait_for_zigpy_tasks()
+    assert req.call_count == 1
+    # Tuya payload: DP 16, type BOOL, length 1, value
+    expected = b"\x10\x01\x00\x01" + bytes([value])
+    assert req.call_args.kwargs["data"].endswith(expected)
