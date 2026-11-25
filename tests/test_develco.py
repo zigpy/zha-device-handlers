@@ -15,6 +15,7 @@ from tests.common import ClusterListener
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.develco.humidity import HumidityPowerConfiguration
+from zhaquirks.develco.intelligent_keypad import KeypadPowerConfiguration
 from zhaquirks.develco.power_plug import WholeDegreeDeviceTemperature
 
 zhaquirks.setup()
@@ -269,6 +270,50 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
         power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
         == 143
     )
+
+
+@pytest.mark.parametrize(
+    ("firmware_version", "derives_percentage"),
+    [
+        (0x0001060A, True),  # 1.6.10 only reports the battery voltage
+        (0x00020005, False),  # 2.0.5 reports the battery percentage itself
+        (0x00020006, False),
+        (None, False),
+    ],
+)
+async def test_frient_keypad_battery_percentage(
+    zigpy_device_from_v2_quirk, firmware_version, derives_percentage
+):
+    """Test the keypad derives the battery percentage from voltage on firmware 1.x."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-110",
+        endpoint_ids=[44],
+        cluster_ids={44: {PowerConfiguration.cluster_id: ClusterType.Server}},
+        firmware_version=firmware_version,
+    )
+
+    power = device.endpoints[44].power
+    assert isinstance(power, KeypadPowerConfiguration) is derives_percentage
+
+    # the device reports 100 (50 %) alongside 5.3 V
+    power.update_attribute(
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id, 100
+    )
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 53)
+
+    # 5.3 V within the 4.0-6.0 V bounds: (5.3 - 4.0) / (6.0 - 4.0) * 200 = 130
+    assert power.get(
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    ) == (130 if derives_percentage else 100)
+
+    if derives_percentage:
+        # a full pack measures above the nominal 6.0 V
+        power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 62)
+        assert (
+            power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+            == 200
+        )
 
 
 async def test_frient_smart_plug_device_temperature():
