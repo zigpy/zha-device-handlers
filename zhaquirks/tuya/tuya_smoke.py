@@ -93,13 +93,8 @@ ALARM_CLEAR_S = 60  # no DP 101 = false report for this long: alarm over
 
 DP_SMOKE = 1
 DP_SELF_TEST = 101
-# Local only, never sent by the device: gives the saved timer flag an ID.
-DP_LOCAL_TIMER_FLAG = 0xFE
 
 ATTR_ZONE_STATUS = IasZone.AttributeDefs.zone_status.name
-# Saved across restarts: a heartbeat was seen in the current alarm, so the
-# clear timer applies to it.
-ATTR_TIMER_RUNNING = "alarm_timer_running"
 
 
 class PA44ZTuyaCluster(TuyaMCUCluster):
@@ -109,14 +104,10 @@ class PA44ZTuyaCluster(TuyaMCUCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self._loop = asyncio.get_running_loop()
+        # Only a heartbeat in this session starts the clear timer. An alarm
+        # restored after a restart stays on until a heartbeat, a DP 1 end
+        # report or a self-test clears it.
         self._alarm_handle = None
-        # A smoke alarm restored from the database after a restart is not seen
-        # by the datapoint handlers. Check it once the saved values are
-        # restored: it is cleared only if its clear timer was running.
-        # DP 101 = false reports from a real ongoing alarm replace this check.
-        self._alarm_handle = self._loop.call_later(
-            ALARM_CLEAR_S, self._check_restored_alarm
-        )
 
     # --- smoke alarm ---
 
@@ -135,23 +126,12 @@ class PA44ZTuyaCluster(TuyaMCUCluster):
             self._alarm_handle.cancel()
             self._alarm_handle = None
 
-    def _set_timer_running(self, running: bool) -> None:
-        if bool(self.get(ATTR_TIMER_RUNNING)) != running:
-            self.update_attribute(ATTR_TIMER_RUNNING, running)
-
     def _arm_alarm_timer(self, delay: float) -> None:
         self._cancel_alarm_timer()
         self._alarm_handle = self._loop.call_later(delay, self._clear_alarm)
-        self._set_timer_running(True)
-
-    def _check_restored_alarm(self) -> None:
-        self._alarm_handle = None
-        if self.get(ATTR_TIMER_RUNNING):
-            self._clear_alarm()
 
     def _clear_alarm(self) -> None:
         self._cancel_alarm_timer()
-        self._set_timer_running(False)
         ias = self._ias()
         if ias is not None and self._alarm_active():
             self.debug("%s - Clearing smoke alarm", self.endpoint.device.ieee)
@@ -168,7 +148,6 @@ class PA44ZTuyaCluster(TuyaMCUCluster):
             # Start (0) or end of an alarm: no clear timer until this alarm's
             # first heartbeat. Units that report the end clear normally.
             self._cancel_alarm_timer()
-            self._set_timer_running(False)
 
         elif datapoint.dp == DP_SELF_TEST:
             if value:
@@ -214,11 +193,6 @@ class PA44ZTuyaCluster(TuyaMCUCluster):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="self_test_done",
         fallback_name="Self-test done",
-    )
-    .tuya_attribute(
-        dp_id=DP_LOCAL_TIMER_FLAG,
-        attribute_name=ATTR_TIMER_RUNNING,
-        type=t.Bool,
     )
     .skip_configuration()
     .add_to_registry(replacement_cluster=PA44ZTuyaCluster)

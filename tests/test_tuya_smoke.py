@@ -188,11 +188,9 @@ async def test_pa44z_heartbeat_without_alarm_does_nothing(pa44z):
 
 async def test_pa44z_smoke_report_alone_never_clears(pa44z):
     """Without heartbeats (DP 101 = false) the timer never clears the alarm."""
-    tuya = pa44z.tuya_manufacturer
-    _pa44z_report(tuya, 1, t.enum8(0))
+    _pa44z_report(pa44z.tuya_manufacturer, 1, t.enum8(0))
     await asyncio.sleep(0.5)
     assert _alarm(pa44z) == IasZone.ZoneStatus.Alarm_1
-    assert not tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
 
 
 async def test_pa44z_end_report_clears_and_stops_timer(pa44z):
@@ -200,39 +198,25 @@ async def test_pa44z_end_report_clears_and_stops_timer(pa44z):
     tuya = pa44z.tuya_manufacturer
     _pa44z_report(tuya, 1, t.enum8(0))
     _pa44z_report(tuya, 101, False)
-    assert tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
+    assert tuya._alarm_handle is not None
 
     _pa44z_report(tuya, 1, t.enum8(1))
     assert _alarm(pa44z) == 0
-    assert not tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
     assert tuya._alarm_handle is None
 
 
-async def test_pa44z_timer_flag_follows_alarm(pa44z):
-    """The saved flag is set by the first heartbeat and cleared with the alarm."""
-    tuya = pa44z.tuya_manufacturer
-    _pa44z_report(tuya, 1, t.enum8(0))
-    assert not tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
-    _pa44z_report(tuya, 101, False)
-    assert tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
-    await asyncio.sleep(0.3)
-    assert _alarm(pa44z) == 0
-    assert not tuya.get(tuya_smoke.ATTR_TIMER_RUNNING)
-
-
-@pytest.mark.parametrize("timer_was_running", [True, False])
-async def test_pa44z_restored_alarm(pa44z, timer_was_running):
-    """A restored alarm clears after startup only if its timer was running."""
-    # Values restored from the database after the quirk is created.
-    pa44z.tuya_manufacturer.update_attribute(
-        tuya_smoke.ATTR_TIMER_RUNNING, timer_was_running
-    )
+async def test_pa44z_restored_alarm_stays_on(pa44z):
+    """An alarm restored after a restart is not cleared without a heartbeat."""
     pa44z.ias_zone.update_attribute(
         IasZone.AttributeDefs.zone_status.name, IasZone.ZoneStatus.Alarm_1
     )
+    await asyncio.sleep(0.5)
+    assert _alarm(pa44z) == IasZone.ZoneStatus.Alarm_1
+
+    # A heartbeat after the restart starts the timer as usual.
+    _pa44z_report(pa44z.tuya_manufacturer, 101, False)
     await asyncio.sleep(0.3)
-    expected = 0 if timer_was_running else IasZone.ZoneStatus.Alarm_1
-    assert _alarm(pa44z) == expected
+    assert _alarm(pa44z) == 0
 
 
 @pytest.mark.parametrize("value", [True, False])
