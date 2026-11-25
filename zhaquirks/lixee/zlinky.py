@@ -1,34 +1,28 @@
 """Quirk for ZLinky_TIC."""
 
-from copy import deepcopy
 from typing import Final
 
-from zigpy.profiles import zgp, zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Identify,
-    Ota,
-    PowerConfiguration,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, ReportingConfig
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 from zhaquirks.tuya import TuyaManufCluster
+
+
+class LinkyMode(t.enum8):
+    """Linky TIC mode, bit 0: standard, bit 1: three phase, bit 2: producer."""
+
+    Historical_single_phase = 0x00
+    Standard_single_phase = 0x01
+    Historical_three_phase = 0x02
+    Standard_three_phase = 0x03
+    Standard_single_phase_producer = 0x05
+    Standard_three_phase_producer = 0x07
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -50,8 +44,9 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
             id=0x0000, type=t.LimitedCharString(16), is_manufacturer_specific=True
         )
         # Historical mode: DEMAIN "Couleur du lendemain" / String 4 car
+        # Reported without manufacturer code
         hist_tomorrow_color: Final = ZCLAttributeDef(
-            id=0x0001, type=t.LimitedCharString(4), is_manufacturer_specific=True
+            id=0x0001, type=t.LimitedCharString(4), manufacturer_code=None
         )
         # Historical mode: HHPHC "Horaire Heure Pleines Heures Creuses" / Uint8 1 car
         hist_schedule_peak_hours_off_peak_hours: Final = ZCLAttributeDef(
@@ -86,8 +81,9 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
             id=0x0009, type=t.LimitedCharString(6), is_manufacturer_specific=True
         )
         # Historical and standard mode: "Tariff Period (From V15)" / String 16 car
+        # Reported without manufacturer code
         linky_tariff_period: Final = ZCLAttributeDef(
-            id=0x0010, type=t.LimitedCharString(16), is_manufacturer_specific=True
+            id=0x0010, type=t.LimitedCharString(16), manufacturer_code=None
         )
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         linky_acquisition_time: Final = ZCLAttributeDef(
@@ -226,89 +222,53 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
 
-class ZLinkyTIC(CustomDevice):
-    """ZLinky_TIC from LiXee."""
+# Tariff period and tomorrow color are not sent unless reporting is configured
+REPORT_ON_CHANGE = ReportingConfig(
+    min_interval=0, max_interval=3600, reportable_change=0
+)
 
-    signature = {
-        MODELS_INFO: [(LIXEE, "ZLinky_TIC")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Metering.cluster_id,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    ZLinkyTICMetering,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
-class ZLinkyTICFWV12(ZLinkyTIC):
-    """ZLinky_TIC from LiXee with firmware v12.0 & v13.0."""
-
-    signature = deepcopy(ZLinkyTIC.signature)
-
-    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0 & v13.0
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)
-
-
-class ZLinkyTICFWV14(ZLinkyTICFWV12):
-    """ZLinky_TIC from LiXee with firmware v14.0+."""
-
-    signature = deepcopy(ZLinkyTICFWV12.signature)
-    replacement = deepcopy(ZLinkyTICFWV12.replacement)
-
-    # Insert Time configuration cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
-
-    # Insert Tuya cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaManufCluster.cluster_id)
-    signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
-
-    replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
-
-
-class ZLinkyTICFWV15(ZLinkyTICFWV14):
-    """ZLinky_TIC from LiXee with firmware v15.0+."""
-
-    signature = deepcopy(ZLinkyTICFWV14.signature)
-    replacement = deepcopy(ZLinkyTICFWV14.replacement)
-
-    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
-    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+(
+    QuirkBuilder(LIXEE, "ZLinky_TIC")
+    # Firmware v12.0+ already has this cluster, older firmware gets it added
+    .adds(PowerConfiguration.cluster_id)
+    .replaces(ZLinkyTICMetering)
+    .replaces(ZLinkyTICManufacturerCluster)
+    # Firmware v14.0+ exposes Tuya clusters that are not used
+    .removes(TuyaManufCluster.cluster_id)
+    .removes(TuyaManufCluster.cluster_id, cluster_type=ClusterType.Client)
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_tariff_period.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        suggested_display_precision=None,
+        reporting_config=REPORT_ON_CHANGE,
+        translation_key="tariff_period",
+        fallback_name="Tariff period",
+    )
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_tomorrow_color.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        suggested_display_precision=None,
+        reporting_config=REPORT_ON_CHANGE,
+        translation_key="tomorrow_color",
+        fallback_name="Tomorrow color",
+    )
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_tariff_option_or_std_supplier_price_schedule_name.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        suggested_display_precision=None,
+        attribute_initialized_from_cache=False,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="tariff_option",
+        fallback_name="Tariff option",
+    )
+    .enum(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_mode.name,
+        enum_class=LinkyMode,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_mode",
+        fallback_name="Linky mode",
+    )
+    .add_to_registry()
+)
