@@ -1,8 +1,10 @@
 """Module for Sinope quirks implementations."""
 
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import DeviceTemperature
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
@@ -133,6 +135,39 @@ LIGHT_DEVICE_TRIGGERS = {
         },
     },
 }
+
+# Each paddle reports when it is pressed. Once released, it reports a single press,
+# a double press or a long press, so a single press is only reported once the
+# device ruled out a double press. The second press of a double press is not
+# reported as pressed, so the pressed report is not declared as `press_start`.
+LIGHT_BUTTON_EVENT_ENTITIES = tuple(
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_RELEASE, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_PRESS, button),
+            ),
+        ],
+        cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=unique_id_suffix,
+        translation_key=translation_key,
+        fallback_name=fallback_name,
+    )
+    for button, unique_id_suffix, translation_key, fallback_name in (
+        (TURN_ON, "button_on", "on_button", "On button"),
+        (TURN_OFF, "button_off", "off_button", "Off button"),
+    )
+)
 
 
 class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
