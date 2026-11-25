@@ -25,6 +25,7 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
+    smart_remote_button_events,
 )
 
 
@@ -112,6 +113,8 @@ class TuyaSmartRemote0043TI(CustomDevice):
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)
+
 
 class TuyaSmartRemote0043TO(CustomDevice):
     """Benexmart/Tuya 3-button remote device with oout time cluster."""
@@ -194,6 +197,8 @@ class TuyaSmartRemote0043TO(CustomDevice):
         (LONG_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)
 
 
 class TuyaSmartRemote0043TOPlusA(CustomDevice):
@@ -290,6 +295,8 @@ class TuyaSmartRemote0043TOPlusA(CustomDevice):
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)
+
 
 class TuyaSmartRemote0043TOPlusB(CustomDevice):
     """Tuya 3-button remote device with time on out cluster."""
@@ -373,6 +380,8 @@ class TuyaSmartRemote0043TOPlusB(CustomDevice):
         (LONG_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)
 
 
 class TuyaSmartRemote0043NO(CustomDevice):
@@ -458,6 +467,8 @@ class TuyaSmartRemote0043NO(CustomDevice):
         (LONG_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)
 
 
 class TuyaSmartRemote0043TOPlusC(EnchantedDevice):
@@ -579,3 +590,5 @@ class TuyaSmartRemote0043TOPlusC(EnchantedDevice):
         (LONG_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=3)

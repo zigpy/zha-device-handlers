@@ -25,6 +25,7 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
+    smart_remote_button_events,
 )
 
 
@@ -137,6 +138,8 @@ class TuyaSmartRemote0044TI(CustomDevice, Tuya4ButtonTriggers):
         },
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=4)
+
 
 class TuyaSmartRemote0044TO(CustomDevice, Tuya4ButtonTriggers):
     """Tuya 4-button remote device with time on out cluster."""
@@ -225,6 +228,8 @@ class TuyaSmartRemote0044TO(CustomDevice, Tuya4ButtonTriggers):
             },
         },
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=4)
 
 
 class TuyaSmartRemote0044TOPlusA(CustomDevice, Tuya4ButtonTriggers):
@@ -317,6 +322,8 @@ class TuyaSmartRemote0044TOPlusA(CustomDevice, Tuya4ButtonTriggers):
         },
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=4)
+
 
 class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
     """Tuya 4-button remote device with time on out cluster."""
@@ -405,3 +412,5 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
             },
         },
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=4)

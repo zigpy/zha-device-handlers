@@ -8,7 +8,7 @@ from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff, Scenes
 
 from zhaquirks import CustomCluster, LevelControlWithMoveDirection
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -20,6 +20,7 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
+    COMMAND_RELEASE,
     DIM_DOWN,
     DIM_UP,
     ENDPOINT_ID,
@@ -190,6 +191,98 @@ class StyrbarOnOffCluster(CustomCluster, OnOff):
                 },
             },
         }
+    )
+    # The `on` the remote sends at the start of every arrow long press is dropped by
+    # `StyrbarOnOffCluster`, so it doesn't fire a press of the on button.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_OFF)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_DOWN),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
+    )
+    # The arrows send the same release, so it ends the hold of the arrow held
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, LEFT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, LEFT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_RELEASE,
+                    CLUSTER_ID: Scenes.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_left",
+        translation_key="left_button",
+        fallback_name="Left button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, RIGHT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, RIGHT),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_RELEASE,
+                    CLUSTER_ID: Scenes.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_right",
+        translation_key="right_button",
+        fallback_name="Right button",
     )
     .add_to_registry()
 )
