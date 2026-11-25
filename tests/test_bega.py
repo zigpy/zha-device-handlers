@@ -599,8 +599,12 @@ async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_pollin
         await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
         # the follow-up has been sent and is waiting for the device's reply
         await wait_until(lambda: request.call_count == 3)
-        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        configure = asyncio.create_task(
+            bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        )
+        await asyncio.sleep(0.05)
         expand_reply.set()
+        await configure
         await wait_until(lambda: request.call_count >= 5)
         await asyncio.sleep(0.15)
 
@@ -608,6 +612,41 @@ async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_pollin
     assert [scan_mode for _, _, scan_mode in sent_commands(request)] == [
         None,
         DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
+        None,
+        DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
+    ]
+    assert bus._follow_up_scan is False
+
+
+async def test_delayed_direct_scan_reply_keeps_newer_scan(
+    sdc2_device, fast_polling, monkeypatch
+):
+    """A late reply to an extend scan must not clear the follow-up of a newer configure scan."""
+    # the configure scan is still running when the late reply arrives
+    monkeypatch.setattr(BegaDaliBus, "POLL_FAST_S", 0.2)
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+    expand_reply = asyncio.Event()
+
+    with simulated(bus, expand_reply=expand_reply) as request:
+        extend = asyncio.create_task(
+            bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.Expand_system)
+        )
+        # the extend scan has been sent and is waiting for the device's reply
+        await wait_until(lambda: request.call_count == 1)
+        configure = asyncio.create_task(
+            bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        )
+        await asyncio.sleep(0.05)
+        expand_reply.set()
+        await asyncio.gather(extend, configure)
+        await wait_until(lambda: request.call_count >= 3)
+        await asyncio.sleep(0.6)  # two slow polls: scan seen, then back in run mode
+
+    # the configure scan keeps its follow-up
+    assert [scan_mode for _, _, scan_mode in sent_commands(request)] == [
         DaliScanMode.Expand_system,
         None,
         DaliScanMode.New_installation,

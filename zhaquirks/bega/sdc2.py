@@ -143,6 +143,9 @@ class BegaDaliBus(CustomCluster):
         self._follow_up_scan = False  # expand-system scan due after the running scan
         self._scan_seen = False  # bus mode "Scan" observed since the last scan command
         self._scan_generation = 0  # counts accepted scan commands
+        # One scan request at a time, so that a late reply cannot overwrite the
+        # state of a scan that was started after it.
+        self._scan_lock = asyncio.Lock()
         self._start_status_polling()
 
     async def command(
@@ -154,17 +157,18 @@ class BegaDaliBus(CustomCluster):
             kwargs.get("scan_mode", args[0] if args else None) if is_scan else None
         )
         new_installation = is_scan and scan_mode == DaliScanMode.New_installation
-        if new_installation:
-            await self._switch_all_gears_off()
-        result = await super().command(
-            command_id,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            **kwargs,
-        )
-        if is_scan and self._accepted(result):
-            self._scan_started(follow_up=new_installation)
+        async with self._scan_lock:
+            if new_installation:
+                await self._switch_all_gears_off()
+            result = await super().command(
+                command_id,
+                *args,
+                manufacturer=manufacturer,
+                expect_reply=expect_reply,
+                **kwargs,
+            )
+            if is_scan and self._accepted(result):
+                self._scan_started(follow_up=new_installation)
         return result
 
     @staticmethod
@@ -211,18 +215,19 @@ class BegaDaliBus(CustomCluster):
         self._follow_up_scan = False
         generation = self._scan_generation
         await asyncio.sleep(self.FOLLOW_UP_SCAN_DELAY_S)
-        if generation != self._scan_generation:
-            return  # a newer scan command took over, it brings its own follow-up
-        try:
-            response = await super().command(
-                self.ServerCommandDefs.bus_scan.id, scan_mode=DaliScanMode.Expand_system
-            )
-        except Exception as exc:  # noqa: BLE001
-            self.debug("Follow-up scan failed: %r", exc)
-            return
-        # a newer scan may have been accepted while waiting for the reply
-        if self._accepted(response) and generation == self._scan_generation:
-            self._scan_started(follow_up=False)
+        async with self._scan_lock:
+            if generation != self._scan_generation:
+                return  # a newer scan command took over, it brings its own follow-up
+            try:
+                response = await super().command(
+                    self.ServerCommandDefs.bus_scan.id,
+                    scan_mode=DaliScanMode.Expand_system,
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.debug("Follow-up scan failed: %r", exc)
+                return
+            if self._accepted(response):
+                self._scan_started(follow_up=False)
 
     def _start_status_polling(self) -> None:
         if self._poll_task is not None and not self._poll_task.done():
