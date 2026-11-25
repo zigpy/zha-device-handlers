@@ -282,10 +282,16 @@ class MoesManufCluster(TuyaManufClusterAttributes):
             id=MOES_AWAY_DAYS_ATTR, type=t.uint32_t, is_manufacturer_specific=True
         )
         workday_schedule: Final = ZCLAttributeDef(
-            id=MOES_SCHEDULE_WORKDAY_ATTR, type=data144, is_manufacturer_specific=True
+            id=MOES_SCHEDULE_WORKDAY_ATTR,
+            type=data144,
+            zcl_type=foundation.DataTypeId.octstr,
+            is_manufacturer_specific=True,
         )
         weekend_schedule: Final = ZCLAttributeDef(
-            id=MOES_SCHEDULE_WEEKEND_ATTR, type=data144, is_manufacturer_specific=True
+            id=MOES_SCHEDULE_WEEKEND_ATTR,
+            type=data144,
+            zcl_type=foundation.DataTypeId.octstr,
+            is_manufacturer_specific=True,
         )
 
     DIRECT_MAPPED_ATTRS = {
