@@ -829,8 +829,8 @@ class InovelliQuirkBuilder(QuirkBuilder):
 
         The device resolves taps itself and reports them with its ``button_event``
         command from endpoint 2: pressed 1x (a resolved single tap), 2x to 5x, held
-        and released. Released is the end of a hold, as in Inovelli's own drivers
-        and Zigbee2MQTT, which pair it with held. It only ends a hold this entity
+        and released. Released is the end of a hold, as in Inovelli's own drivers,
+        which pair it with held. It only ends a hold this entity
         saw start (`while_held`), so a release after a tap, if the device sends one,
         fires nothing. Assumed, not confirmed on hardware: held is sent once, at the
         hold threshold. Only events from endpoint 2 count, like in Zigbee2MQTT. The
