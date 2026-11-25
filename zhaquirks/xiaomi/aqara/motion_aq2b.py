@@ -20,6 +20,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     IlluminanceMeasurementCluster,
     MotionCluster,
+    MotionIlluminanceMeasurementCluster,
     OccupancyCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -65,7 +66,7 @@ class MotionAQ2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
-                    IlluminanceMeasurementCluster,
+                    MotionIlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,
                     XIAOMI_CLUSTER_ID,
