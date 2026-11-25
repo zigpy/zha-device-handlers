@@ -2,6 +2,7 @@
 
 # pylint disable=C0103
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -14,6 +15,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     BUTTON_1,
@@ -95,3 +97,24 @@ class CentraLite3460L(CustomDevice):
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON},
         (SHORT_RELEASE, BUTTON_1): {COMMAND: COMMAND_OFF},
     }
+
+    # The button sends on when pressed and off when released
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START,
+                    trigger=(SHORT_PRESS, BUTTON_1),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_RELEASE, BUTTON_1),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
