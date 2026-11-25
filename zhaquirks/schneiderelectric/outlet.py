@@ -5,6 +5,7 @@ from typing import Final
 from zha.application.helpers import write_attributes_safe
 from zha.application.platforms import AttrConfig, ClusterConfig
 from zha.application.platforms.number import NumberConfigurationEntity
+from zha.application.platforms.select import ZCLEnumSelectEntity
 from zha.units import PERCENTAGE
 from zigpy import types as t
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -109,6 +110,26 @@ class SEIndicatorLuminanceNumber(NumberConfigurationEntity):
         self.maybe_emit_state_changed_event()
 
 
+class SELocalControlModeSelect(ZCLEnumSelectEntity):
+    """Local control mode; only created where the outlet supports the attribute.
+
+    Firmware 0x020612ff answers writes to 0x0050 with UNSUPPORTED_ATTRIBUTE, while
+    0x030000ff reads it. The startup read decides whether the entity is created.
+    """
+
+    _attribute_name = SEOutletConfiguration.AttributeDefs.se_local_control_mode.name
+    _enum = SELocalControlMode
+    _server_cluster_config = {
+        SEOutletConfiguration.cluster_id: ClusterConfig(
+            attributes={
+                SEOutletConfiguration.AttributeDefs.se_local_control_mode: (
+                    AttrConfig(read_on_startup=True)
+                ),
+            },
+        ),
+    }
+
+
 (
     QuirkBuilder(SE_MANUF_NAME, "SOCKET/OUTLET/1")
     .applies_to(SE_MANUF_NAME, "SOCKET/OUTLET/2")
@@ -131,11 +152,11 @@ class SEIndicatorLuminanceNumber(NumberConfigurationEntity):
         translation_key="indicator_mode",
         fallback_name="Indicator mode",
     )
-    .enum(
-        attribute_name=SEOutletConfiguration.AttributeDefs.se_local_control_mode.name,
-        enum_class=SELocalControlMode,
-        cluster_id=SEOutletConfiguration.cluster_id,
+    .adds_entity(
+        SELocalControlModeSelect,
         endpoint_id=6,
+        cluster_id=SEOutletConfiguration.cluster_id,
+        unique_id_suffix=SEOutletConfiguration.AttributeDefs.se_local_control_mode.name,
         translation_key="local_control_mode",
         fallback_name="Local control mode",
     )
