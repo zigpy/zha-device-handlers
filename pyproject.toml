@@ -43,7 +43,7 @@ dev = [
 # event entities, on top of the zha dev commit used before), and move to zha dev
 # once zigpy/zha#1091 is merged
 override-dependencies = [
-    "zha @ git+https://github.com/zigpy/zha@197f4291c2a51c9d23ceebda93e96a5cccaebf92",
+    "zha @ git+https://github.com/zigpy/zha@6d986807dd49c8d7996bd460743d0d7e913b3dec",
 ]
 
 [tool.setuptools-git-versioning]
