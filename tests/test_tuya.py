@@ -18,6 +18,7 @@ import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
+    Groups,
     LevelControl,
     OnOff,
     PowerConfiguration,
@@ -406,7 +407,7 @@ async def test_ts0601_multi_gang_switch(
             }
         },
         # one endpoint without the Tuya MCU cluster
-        {1: {OnOff.cluster_id: ClusterType.Server}},
+        {1: {Groups.cluster_id: ClusterType.Server}},
     ),
 )
 async def test_ts0601_multi_gang_switch_other_layouts(
@@ -418,8 +419,9 @@ async def test_ts0601_multi_gang_switch_other_layouts(
         "_TZE200_wktrysab", "TS0601", cluster_ids=cluster_ids
     )
     assert not hasattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
-    for ep_id in cluster_ids:
-        assert type(switch.endpoints[ep_id].on_off) is OnOff
+    for ep_id, clusters in cluster_ids.items():
+        if OnOff.cluster_id in clusters:
+            assert type(switch.endpoints[ep_id].on_off) is OnOff
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))

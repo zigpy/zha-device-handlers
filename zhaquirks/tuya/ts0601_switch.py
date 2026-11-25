@@ -204,8 +204,8 @@ def _reports_one_endpoint(device: zigpy.device.Device) -> bool:
 
     The multi-gang switches below report one endpoint (plus a Green Power proxy
     endpoint on some models), whose Tuya MCU cluster carries the DPs of all
-    gangs. Units that report an endpoint or an OnOff cluster of their own are
-    left alone.
+    gangs. Units that report an endpoint per gang, or an OnOff server cluster of
+    their own, are left alone.
     """
     if set(device.endpoints) - {0, GREEN_POWER_ENDPOINT_ID} != {1}:
         return False
