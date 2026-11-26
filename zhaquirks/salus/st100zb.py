@@ -22,8 +22,8 @@ class SalusHoldType(t.enum8):
     """Whether the thermostat's own schedule may change the setpoint."""
 
     Schedule = 0x00
-    TemporaryOverride = 0x01
-    PermanentOverride = 0x02
+    Temporary_override = 0x01
+    Permanent_override = 0x02
 
 
 class SalusTimeFormat(t.enum8):
@@ -74,8 +74,8 @@ class SalusThermostat(CustomCluster, Thermostat):
 class SalusFanCoilType(t.enum8):
     """Fan coil type (installer setting P01)."""
 
-    TwoPipe = 0x00
-    FourPipe = 0x01
+    Two_pipe = 0x00
+    Four_pipe = 0x01
 
 
 class SalusHeatCoolOption(t.enum8):
@@ -87,18 +87,18 @@ class SalusHeatCoolOption(t.enum8):
       only. The thermostat refuses heat only and cool only (INVALID_VALUE).
     """
 
-    HeatOnly = 0x00
-    CoolOnly = 0x01
-    ManualChangeover = 0x02
-    SeasonalOrHeatCoolAuto = 0x03
-    AuxHeatOrAutoOnly = 0x04
+    Heat_only = 0x00
+    Cool_only = 0x01
+    Manual_changeover = 0x02
+    Seasonal_or_heat_cool_auto = 0x03
+    Aux_heat_or_auto_only = 0x04
 
 
 FOUR_PIPE_HEAT_COOL_OPTIONS: Final = frozenset(
     {
-        SalusHeatCoolOption.ManualChangeover,
-        SalusHeatCoolOption.SeasonalOrHeatCoolAuto,
-        SalusHeatCoolOption.AuxHeatOrAutoOnly,
+        SalusHeatCoolOption.Manual_changeover,
+        SalusHeatCoolOption.Seasonal_or_heat_cool_auto,
+        SalusHeatCoolOption.Aux_heat_or_auto_only,
     }
 )
 
@@ -106,8 +106,7 @@ FOUR_PIPE_HEAT_COOL_OPTIONS: Final = frozenset(
 class SalusInstallerCluster(CustomCluster):
     """Salus (Computime) manufacturer-specific installer settings cluster.
 
-    Writing a setting switches the thermostat to Off, as leaving the installer
-    menu on the keypad does.
+    Writing a setting switches the thermostat to Off.
     """
 
     cluster_id: t.uint16_t = 0xFC06
@@ -143,7 +142,7 @@ class SalusInstallerCluster(CustomCluster):
             self.find_attribute(attr).name: value for attr, value in attributes.items()
         }
         if (
-            names.get(attrs.fan_coil_type.name) == SalusFanCoilType.FourPipe
+            names.get(attrs.fan_coil_type.name) == SalusFanCoilType.Four_pipe
             and attrs.heat_cool_option.name not in names
         ):
             success, _ = await self.read_attributes([attrs.heat_cool_option.name])
@@ -153,7 +152,7 @@ class SalusInstallerCluster(CustomCluster):
             ):
                 attributes = {
                     **attributes,
-                    attrs.heat_cool_option.name: SalusHeatCoolOption.SeasonalOrHeatCoolAuto,
+                    attrs.heat_cool_option.name: SalusHeatCoolOption.Seasonal_or_heat_cool_auto,
                 }
         return await super().write_attributes(attributes, *args, **kwargs)
 
@@ -182,6 +181,8 @@ class SalusInstallerCluster(CustomCluster):
         translation_key="time_format",
         fallback_name="Time format",
     )
+    # remote_sensing follows the sensor location (installer menu SE: INT = 0,
+    # EXT = 1); the setback input (P16) doesn't set the other bits.
     .switch(
         attribute_name=Thermostat.AttributeDefs.remote_sensing.name,
         cluster_id=Thermostat.cluster_id,

@@ -85,7 +85,7 @@ async def test_st100zb_hold_type_write(st100zb):
         await cluster.write_attributes(
             {
                 SalusThermostatCluster.AttributeDefs.hold_type.name: (
-                    SalusHoldType.PermanentOverride
+                    SalusHoldType.Permanent_override
                 )
             }
         )
@@ -97,7 +97,7 @@ async def test_st100zb_hold_type_write(st100zb):
     (record,) = request_mock.mock_calls[0].args[3]
     assert record.attrid == SalusThermostatCluster.AttributeDefs.hold_type.id
     assert record.value.type == foundation.DataTypeId.uint8
-    assert record.value.value == SalusHoldType.PermanentOverride
+    assert record.value.value == SalusHoldType.Permanent_override
 
 
 async def test_st100zb_time_format(st100zb):
@@ -141,29 +141,29 @@ async def test_st100zb_time_format(st100zb):
     [
         # 4-pipe refuses heat only and cool only: reset to auto changeover
         (
-            SalusFanCoilType.FourPipe,
-            SalusHeatCoolOption.HeatOnly,
-            {0x0000: SalusFanCoilType.FourPipe, 0x0003: 3},
+            SalusFanCoilType.Four_pipe,
+            SalusHeatCoolOption.Heat_only,
+            {0x0000: SalusFanCoilType.Four_pipe, 0x0003: 3},
         ),
         (
-            SalusFanCoilType.FourPipe,
-            SalusHeatCoolOption.CoolOnly,
-            {0x0000: SalusFanCoilType.FourPipe, 0x0003: 3},
+            SalusFanCoilType.Four_pipe,
+            SalusHeatCoolOption.Cool_only,
+            {0x0000: SalusFanCoilType.Four_pipe, 0x0003: 3},
         ),
         # the option is unknown: reset as well
         (
-            SalusFanCoilType.FourPipe,
+            SalusFanCoilType.Four_pipe,
             None,
-            {0x0000: SalusFanCoilType.FourPipe, 0x0003: 3},
+            {0x0000: SalusFanCoilType.Four_pipe, 0x0003: 3},
         ),
         # valid for both: kept
         (
-            SalusFanCoilType.FourPipe,
-            SalusHeatCoolOption.ManualChangeover,
-            {0x0000: SalusFanCoilType.FourPipe},
+            SalusFanCoilType.Four_pipe,
+            SalusHeatCoolOption.Manual_changeover,
+            {0x0000: SalusFanCoilType.Four_pipe},
         ),
         # 2-pipe allows every option
-        (SalusFanCoilType.TwoPipe, None, {0x0000: SalusFanCoilType.TwoPipe}),
+        (SalusFanCoilType.Two_pipe, None, {0x0000: SalusFanCoilType.Two_pipe}),
     ],
 )
 async def test_st100zb_fan_coil_type_write(
@@ -188,7 +188,7 @@ async def test_st100zb_fan_coil_type_write(
         await cluster.write_attributes({attrs.fan_coil_type.name: fan_coil_type})
 
     assert read_mock.call_count == (
-        1 if fan_coil_type == SalusFanCoilType.FourPipe else 0
+        1 if fan_coil_type == SalusFanCoilType.Four_pipe else 0
     )
     assert request_mock.call_count == 1
     assert request_mock.mock_calls[0].kwargs["manufacturer"] == (
@@ -211,16 +211,16 @@ async def test_st100zb_heat_cool_option_write(st100zb):
         request_mock.return_value = (foundation.Status.SUCCESS, "")
         await cluster.write_attributes(
             {
-                attrs.fan_coil_type.id: SalusFanCoilType.FourPipe,
-                attrs.heat_cool_option.id: SalusHeatCoolOption.ManualChangeover,
+                attrs.fan_coil_type.id: SalusFanCoilType.Four_pipe,
+                attrs.heat_cool_option.id: SalusHeatCoolOption.Manual_changeover,
             }
         )
 
     read_mock.assert_not_called()
     records = request_mock.mock_calls[0].args[3]
     assert {r.attrid: r.value.value for r in records} == {
-        attrs.fan_coil_type.id: SalusFanCoilType.FourPipe,
-        attrs.heat_cool_option.id: SalusHeatCoolOption.ManualChangeover,
+        attrs.fan_coil_type.id: SalusFanCoilType.Four_pipe,
+        attrs.heat_cool_option.id: SalusHeatCoolOption.Manual_changeover,
     }
 
 

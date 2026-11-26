@@ -708,11 +708,11 @@
         "endpoint_id": 9,
         "available": true,
         "group_id": null,
-        "current_option": "TwoPipe",
+        "current_option": "Two pipe",
         "enum": "SalusFanCoilType",
         "options": [
-          "TwoPipe",
-          "FourPipe"
+          "Two pipe",
+          "Four pipe"
         ]
       },
       {
@@ -734,14 +734,14 @@
         "endpoint_id": 9,
         "available": true,
         "group_id": null,
-        "current_option": "SeasonalOrHeatCoolAuto",
+        "current_option": "Seasonal or heat cool auto",
         "enum": "SalusHeatCoolOption",
         "options": [
-          "HeatOnly",
-          "CoolOnly",
-          "ManualChangeover",
-          "SeasonalOrHeatCoolAuto",
-          "AuxHeatOrAutoOnly"
+          "Heat only",
+          "Cool only",
+          "Manual changeover",
+          "Seasonal or heat cool auto",
+          "Aux heat or auto only"
         ]
       },
       {
@@ -763,12 +763,12 @@
         "endpoint_id": 9,
         "available": true,
         "group_id": null,
-        "current_option": "PermanentOverride",
+        "current_option": "Permanent override",
         "enum": "SalusHoldType",
         "options": [
           "Schedule",
-          "TemporaryOverride",
-          "PermanentOverride"
+          "Temporary override",
+          "Permanent override"
         ]
       },
       {
