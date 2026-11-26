@@ -31,6 +31,7 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
+    smart_remote_button_events,
 )
 
 
@@ -73,6 +74,8 @@ class TuyaSmartRemote0041TO(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
 
 
 class TuyaSmartRemote0041TI(CustomDevice):
@@ -117,6 +120,8 @@ class TuyaSmartRemote0041TI(CustomDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
+
 
 class TuyaSmartRemote0041TIIAS(CustomDevice):
     """Tuya 1-button remote device with time on in and IAS ancillary device type."""
@@ -160,6 +165,8 @@ class TuyaSmartRemote0041TIIAS(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
 
 
 class TuyaSmartRemote0041TOPlusA(CustomDevice):
@@ -237,6 +244,8 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
 
 
 class TuyaSmartRemote0041TOPlusB(CustomDevice):
@@ -340,6 +349,8 @@ class TuyaSmartRemote0041TOPlusB(CustomDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
+
 
 class TuyaSmartRemote0041_var04(CustomDevice):
     """Tuya 1-button remote device with time on out cluster."""
@@ -393,6 +404,8 @@ class TuyaSmartRemote0041_var04(CustomDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)
+
 
 class TuyaSmartRemote0041PollControl(CustomDevice):
     """Tuya 1-button remote device with poll control."""
@@ -445,3 +458,5 @@ class TuyaSmartRemote0041PollControl(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=1)

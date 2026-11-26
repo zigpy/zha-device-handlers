@@ -370,12 +370,28 @@ class GiexIrrigationStatus(t.enum8):
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
     .applies_to("_TZE284_fhvpaltk", "TS0601")  # SGW08
     .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
+    # Each valve is a child device. All data points are on endpoint 1, so the
+    # entities are assigned to the valves one by one.
+    .child_device(
+        "1",
+        translation_key="valve",
+        translation_placeholders={"index": "1"},
+        fallback_name="Valve 1",
+    )
+    .child_device(
+        "2",
+        translation_key="valve",
+        translation_placeholders={"index": "2"},
+        fallback_name="Valve 2",
+    )
     .tuya_switch(
         dp_id=1,
         attribute_name="valve_on_off_1",
         entity_type=EntityType.STANDARD,
         translation_key="valve_on_off_1",
         fallback_name="Valve 1",
+        child_device_id="1",
+        primary=True,
     )
     .tuya_switch(
         dp_id=2,
@@ -383,6 +399,8 @@ class GiexIrrigationStatus(t.enum8):
         entity_type=EntityType.STANDARD,
         translation_key="valve_on_off_2",
         fallback_name="Valve 2",
+        child_device_id="2",
+        primary=True,
     )
     .tuya_number(
         dp_id=13,
@@ -393,8 +411,9 @@ class GiexIrrigationStatus(t.enum8):
         min_value=0,
         max_value=1440,
         step=1,
-        translation_key="valve_countdown_1",
-        fallback_name="Irrigation time 1",
+        translation_key="valve_countdown",
+        fallback_name="Irrigation time",
+        child_device_id="1",
     )
     .tuya_number(
         dp_id=14,
@@ -405,8 +424,9 @@ class GiexIrrigationStatus(t.enum8):
         min_value=0,
         max_value=1440,
         step=1,
-        translation_key="valve_countdown_2",
-        fallback_name="Irrigation time 2",
+        translation_key="valve_countdown",
+        fallback_name="Irrigation time",
+        child_device_id="2",
     )
     .tuya_sensor(
         dp_id=25,
@@ -416,8 +436,9 @@ class GiexIrrigationStatus(t.enum8):
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
-        translation_key="irrigation_duration_1",
-        fallback_name="Irrigation duration 1",
+        translation_key="irrigation_duration",
+        fallback_name="Irrigation duration",
+        child_device_id="1",
     )
     .tuya_sensor(
         dp_id=26,
@@ -427,8 +448,9 @@ class GiexIrrigationStatus(t.enum8):
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
-        translation_key="irriation_duration_2",
-        fallback_name="Irrigation duration 2",
+        translation_key="irrigation_duration",
+        fallback_name="Irrigation duration",
+        child_device_id="2",
     )
     .tuya_enum(
         dp_id=104,
@@ -436,8 +458,9 @@ class GiexIrrigationStatus(t.enum8):
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
-        translation_key="valve_status_1",
-        fallback_name="Status 1",
+        translation_key="valve_status",
+        fallback_name="Valve status",
+        child_device_id="1",
     )
     .tuya_enum(
         dp_id=105,
@@ -445,8 +468,9 @@ class GiexIrrigationStatus(t.enum8):
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
-        translation_key="valve_status_2",
-        fallback_name="Status 2",
+        translation_key="valve_status",
+        fallback_name="Valve status",
+        child_device_id="2",
     )
     .skip_configuration()
     .add_to_registry()

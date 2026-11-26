@@ -2,9 +2,11 @@
 
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, LevelControl, OnOff
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -101,3 +103,59 @@ class AdurolightNCC(CustomDevice):
             PARAMS: {"step_mode": 1},
         },
     }
+
+    # Each button reports one command per press
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_on",
+            translation_key="on_button",
+            fallback_name="On button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, DIM_UP),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_dim_up",
+            translation_key="dim_up_button",
+            fallback_name="Dim up button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, DIM_DOWN),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_dim_down",
+            translation_key="dim_down_button",
+            fallback_name="Dim down button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_OFF),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_off",
+            translation_key="off_button",
+            fallback_name="Off button",
+        ),
+    )

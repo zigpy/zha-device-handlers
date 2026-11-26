@@ -1,9 +1,16 @@
 """Xiaomi aqara button sensor."""
 
+import logging
+from typing import Final
+
+from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -28,6 +35,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    AqaraSwitchOperationMode,
     BasicCluster,
     DeviceTemperatureCluster,
     XiaomiAqaraE1Cluster,
@@ -45,6 +53,8 @@ RELEASE = 17
 SHAKE = 18
 SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+
+_LOGGER = logging.getLogger(__name__)
 
 MOVEMENT_TYPE = {
     B1ACN01_HOLD: COMMAND_HOLD,
@@ -75,6 +85,70 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class AqaraT1MiniSwitchCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer cluster that switches the T1 mini switch to event mode."""
+
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Manufacturer specific attributes."""
+
+        operation_mode: Final = ZCLAttributeDef(
+            id=0x0009,
+            type=AqaraSwitchOperationMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            manufacturer_code=0x115F,
+        )
+
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Put the switch in event mode, so it reports the press type."""
+        try:
+            result = await self.write_attributes(
+                {
+                    self.AttributeDefs.operation_mode.name: (
+                        AqaraSwitchOperationMode.Event
+                    )
+                }
+            )
+        except (ZigbeeException, TimeoutError) as exc:
+            _LOGGER.debug("Failed to write operation mode: %s", exc)
+        else:
+            # A rejected write is returned as a status record, not raised
+            _LOGGER.debug("Wrote operation mode, response: %s", result)
+
+
+# The device counts the presses itself and reports a hold at the hold threshold
+# and its release. The shake of the AQ3 stays a device trigger.
+BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, SHORT_PRESS),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, DOUBLE_PRESS),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, LONG_PRESS),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, LONG_RELEASE),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    ),
+)
 
 
 class SwitchAQ3(XiaomiCustomDevice):
@@ -124,6 +198,8 @@ class SwitchAQ3(XiaomiCustomDevice):
         (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
     }
 
+    button_event_entities = BUTTON_EVENT_ENTITIES
+
 
 class SwitchAQ3B(XiaomiCustomDevice):
     """Aqara button device - alternate version."""
@@ -169,6 +245,8 @@ class SwitchAQ3B(XiaomiCustomDevice):
         (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
     }
 
+    button_event_entities = BUTTON_EVENT_ENTITIES
+
 
 class SwitchAQ3B2(XiaomiCustomDevice):
     """Aqara button device - alternate version."""
@@ -205,12 +283,12 @@ class SwitchAQ3B2(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     MultistateInputCluster,
+                    AqaraT1MiniSwitchCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    XiaomiAqaraE1Cluster,
                 ],
             }
         },
@@ -222,3 +300,5 @@ class SwitchAQ3B2(XiaomiCustomDevice):
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
         (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
     }
+
+    button_event_entities = BUTTON_EVENT_ENTITIES

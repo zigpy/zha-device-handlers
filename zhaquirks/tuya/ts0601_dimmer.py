@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -36,11 +37,8 @@ class TuyaInWallLevelControlNM(NoManufacturerCluster, TuyaInWallLevelControl):
 
 # --- DEVICE SUMMARY ---
 # TuyaSingleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
-# TuyaDoubleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 # - Dimmer with Green Power Proxy: Endpoint=242 profile=41440 device_type=0x0061, output_clusters: 0x0021 -
 # TuyaSingleSwitchDimmerGP: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
-# TuyaDoubleSwitchDimmerGP: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
-# TuyaTripleSwitchDimmerGP: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 
 
 class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
@@ -96,60 +94,6 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
-        }
-    }
-
-
-class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
-    """Tuya double channel dimmer device."""
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE200_e3oitdyu", "TS0601"),
-            ("_TZE204_bxoo2swd", "TS0601"),
-        ],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
-            # device_version=1
-            # input_clusters=[0, 4, 5, 61184]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster,
-                    TuyaOnOff,
-                    TuyaInWallLevelControl,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOff,
-                    TuyaInWallLevelControl,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
         }
     }
 
@@ -280,156 +224,6 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
     }
 
 
-class TuyaDoubleSwitchDimmerGP(TuyaDimmerSwitch):
-    """Tuya double channel dimmer device."""
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE200_fjjbhx9d", "TS0601"),
-            ("_TZE200_gwkapsoq", "TS0601"),  # Loratap
-            ("_TZE204_zenj4lxv", "TS0601"),
-            ("_TZE204_o9gyszw2", "TS0601"),  # Avatto ZDMS16-2
-            ("_TZE204_jtbgusdc", "TS0601"),  # Avatto DMS16/ZDMS16
-        ],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
-            # device_version=1
-            # input_clusters=[0, 4, 5, 61184]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # input_clusters=[]
-            # output_clusters=[33]
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster,
-                    TuyaOnOffNM,
-                    TuyaInWallLevelControlNM,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                    TuyaInWallLevelControlNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        }
-    }
-
-
-class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
-    """Tuya triple channel dimmer device."""
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE200_vm1gyrso", "TS0601"),
-            ("_TZE204_1v1dxkck", "TS0601"),
-        ],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
-            # device_version=1
-            # input_clusters=[0, 4, 5, 61184]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # input_clusters=[]
-            # output_clusters=[33]
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaLevelControlManufCluster,
-                    TuyaOnOffNM,
-                    TuyaInWallLevelControlNM,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                    TuyaInWallLevelControlNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                    TuyaInWallLevelControlNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        }
-    }
-
-
 (
     TuyaQuirkBuilder("_TZE200_a1ovdobn", "TS0601")  # MOES ZS-D1
     .applies_to("_TZE284_a1ovdobn", "TS0601")
@@ -443,5 +237,57 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
     )
     .adds(TuyaLevelControl)
     .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
+    .add_to_registry()
+)
+
+
+# Two-gang dimmers: each gang has its own endpoint, with Tuya MCU OnOff and
+# LevelControl clusters fed by the DPs of TuyaLevelControlManufCluster.
+(
+    QuirkBuilder("_TZE200_e3oitdyu", "TS0601")
+    .applies_to("_TZE204_bxoo2swd", "TS0601")
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds(TuyaOnOff)
+    .adds(TuyaInWallLevelControl)
+    .adds(TuyaOnOff, endpoint_id=2)
+    .adds(TuyaInWallLevelControl, endpoint_id=2)
+    .replaces(TuyaLevelControlManufCluster)
+    .add_to_registry()
+)
+
+
+# Two-gang dimmers with a Green Power proxy endpoint.
+(
+    QuirkBuilder("_TZE200_fjjbhx9d", "TS0601")
+    .applies_to("_TZE200_gwkapsoq", "TS0601")  # Loratap
+    .applies_to("_TZE204_zenj4lxv", "TS0601")
+    .applies_to("_TZE204_o9gyszw2", "TS0601")  # Avatto ZDMS16-2
+    .applies_to("_TZE204_jtbgusdc", "TS0601")  # Avatto DMS16/ZDMS16
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds(TuyaOnOffNM)
+    .adds(TuyaInWallLevelControlNM)
+    .adds(TuyaOnOffNM, endpoint_id=2)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=2)
+    .replaces(TuyaLevelControlManufCluster)
+    .add_to_registry()
+)
+
+
+# Three-gang dimmers with a Green Power proxy endpoint.
+(
+    QuirkBuilder("_TZE200_vm1gyrso", "TS0601")
+    .applies_to("_TZE204_1v1dxkck", "TS0601")
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(3, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds(TuyaOnOffNM)
+    .adds(TuyaInWallLevelControlNM)
+    .adds(TuyaOnOffNM, endpoint_id=2)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=2)
+    .adds(TuyaOnOffNM, endpoint_id=3)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=3)
+    .replaces(TuyaLevelControlManufCluster)
     .add_to_registry()
 )
