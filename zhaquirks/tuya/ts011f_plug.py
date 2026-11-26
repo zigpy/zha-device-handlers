@@ -1922,3 +1922,14 @@ class Plug_v7(EnchantedDevice):
     .tuya_enchantment()
     .add_to_registry()
 )
+
+
+# GreenSun HSC-ZW-EU outdoor plug (_TZ3000_cicwjqth) does not implement the
+# Electrical Measurement multiplier/divisor attributes; the default divisor of 1
+# renders rmsCurrent in mA as A. Its signature has no Green Power Proxy endpoint,
+# so the generic `Plug` quirk (which requires endpoint 242) does not match it.
+(
+    TuyaQuirkBuilder("_TZ3000_cicwjqth", "TS011F")
+    .replaces(TuyaZBElectricalMeasurement)
+    .add_to_registry()
+)

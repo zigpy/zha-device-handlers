@@ -2204,6 +2204,23 @@ async def test_ts011f_qeuvnohg_acknowledges_temperature_reports(
         assert bytes(reply.call_args.kwargs["data"]) == expected_response
 
 
+def test_ts011f_cicwjqth_current_divisor(zigpy_device_from_v2_quirk):
+    """Test the GreenSun plug pins the current divisor only."""
+    device = zigpy_device_from_v2_quirk(
+        "_TZ3000_cicwjqth",
+        "TS011F",
+        cluster_ids={1: {TuyaZBElectricalMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    cluster = device.endpoints[1].electrical_measurement
+    assert isinstance(cluster, TuyaZBElectricalMeasurement)
+    assert cluster.get("ac_current_divisor") == 1000
+    assert cluster.get("ac_current_multiplier") == 1
+    # This device reports voltage and power in base units; nothing may be pinned there.
+    assert cluster.get("ac_voltage_divisor") is None
+    assert cluster.get("ac_power_divisor") is None
+
+
 @pytest.mark.parametrize(
     "attribute,value,expected_data",
     [
