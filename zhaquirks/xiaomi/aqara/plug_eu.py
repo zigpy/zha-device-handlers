@@ -77,10 +77,21 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     async def bind(self):
         """Bind cluster."""
         result = await super().bind()
-        # Request seems to time out, but still writes the attribute successfully
-        self.create_catching_task(self.write_attributes(self.attr_config))
+        self.create_catching_task(self._enable_opple_mode())
         await remove_from_ep(self.endpoint.device)
         return result
+
+    async def _enable_opple_mode(self) -> None:
+        """Write OppleMode only if it isn't enabled yet.
+
+        The plug keeps the value, but reboots on every write, even of the current
+        value. It reboots before it responds, so the write times out and the retries
+        can reboot it several more times.
+        """
+        success, _ = await self.read_attributes([self.AttributeDefs.mode.id])
+        mode = success.get(self.AttributeDefs.mode.id)
+        if mode is not None and mode != 1:
+            await self.write_attributes(self.attr_config)
 
 
 class PlugMMEU01(XiaomiCustomDevice):
