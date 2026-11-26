@@ -1,0 +1,582 @@
+"""Tests for the Lidl Melinera HG06467 string lights quirk."""
+
+import asyncio
+import colorsys
+from unittest import mock
+
+import pytest
+from zha.application import Platform
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.clusters.lighting import Color
+
+from tests.common import wait_for_zigpy_tasks
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
+import zhaquirks
+from zhaquirks.lidl import hg06467
+from zhaquirks.lidl.hg06467 import (
+    DP_COLOR as DP_COLOR_DP,
+    DP_MODE,
+    DP_WHITE_BRIGHTNESS as DP_WHITE,
+    EFFECT_NAMES,
+    LightMode,
+    MelineraColorCluster,
+    MelineraLight,
+    StringEffect,
+    hs_to_xy,
+    level_to_1000,
+    xy_to_hs,
+)
+from zhaquirks.tuya import TuyaCommand, TuyaDatapointData, TuyaNewManufCluster
+
+zhaquirks.setup()
+
+
+@pytest.fixture(autouse=True)
+def no_send_gap(monkeypatch):
+    """Skip the pause between datapoints in tests."""
+    monkeypatch.setattr(hg06467, "SEND_GAP", 0)
+
+
+def _dev(zigpy_device_from_v2_quirk):
+    """Create the string light with its native clusters."""
+    return zigpy_device_from_v2_quirk(
+        "_TZE200_s8gkrkxk",
+        "TS0601",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                LevelControl.cluster_id: ClusterType.Server,
+                Color.cluster_id: ClusterType.Server,
+                TuyaNewManufCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+
+def _report(cluster, dp, value):
+    """Simulate the string's own change (data report, 0x02)."""
+    cmd = TuyaCommand(status=0, tsn=1, datapoints=[TuyaDatapointData(dp, value)])
+    assert cluster.handle_set_data_response(cmd) == foundation.Status.SUCCESS
+
+
+def _echo(cluster, dp, value):
+    """Simulate the string echoing a write (data response, 0x01)."""
+    cmd = TuyaCommand(status=0, tsn=1, datapoints=[TuyaDatapointData(dp, value)])
+    assert cluster.handle_get_data(cmd) == foundation.Status.SUCCESS
+
+
+def _sent(request_mock):
+    """Decode (dp, payload) of every Tuya command sent."""
+    out = []
+    for call in request_mock.call_args_list:
+        if call.kwargs["cluster"] != TuyaNewManufCluster.cluster_id:
+            continue
+        data = call.kwargs["data"]
+        hdr, rest = foundation.ZCLHeader.deserialize(data)
+        cmd, _ = TuyaCommand.deserialize(rest)
+        for dpd in cmd.datapoints:
+            out.append((dpd.dp, dpd.data.payload))
+    return out
+
+
+def ha_hs_to_xy(h, s):
+    """Copy of homeassistant.util.color.color_hs_to_xy (no gamut)."""
+    r, g, b = (round(c * 255) for c in colorsys.hsv_to_rgb(h / 360, s / 100, 1))
+    R, G, B = (
+        ((c / 255 + 0.055) / 1.055) ** 2.4 if c / 255 > 0.04045 else c / 255 / 12.92
+        for c in (r, g, b)
+    )
+    X = R * 0.664511 + G * 0.154324 + B * 0.162028
+    Y = R * 0.283881 + G * 0.668433 + B * 0.047685
+    Z = R * 0.000088 + G * 0.072310 + B * 0.986039
+    return round(X / (X + Y + Z), 3), round(Y / (X + Y + Z), 3)
+
+
+@pytest.mark.parametrize(
+    "hue,sat",
+    [(0, 100), (30, 100), (60, 100), (120, 100), (200, 80), (300, 50), (15, 30)],
+)
+def test_color_round_trip_matches_ha(hue, sat):
+    """HA color wheel hs -> xy -> device hs gives back the picked hue."""
+    x, y = ha_hs_to_xy(hue, sat)
+    dev_h, dev_s = xy_to_hs(x, y)
+    hue_err = min(abs(dev_h - hue), 360 - abs(dev_h - hue))
+    assert hue_err < 3
+    assert abs(dev_s / 10 - sat) < 2.5
+    # and back again
+    x2, y2 = hs_to_xy(dev_h, dev_s)
+    assert abs(x2 - x) < 0.004 and abs(y2 - y) < 0.004
+
+
+async def test_reports(zigpy_device_from_v2_quirk):
+    """Test datapoint reports update the ZCL state."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    assert isinstance(ep.light_color, MelineraColorCluster)
+
+    _report(tuya, 1, False)
+    assert ep.on_off.get("on_off") == 0
+    _report(tuya, 1, True)
+    assert ep.on_off.get("on_off") == 1
+
+    _report(tuya, 2, LightMode.Effect)
+    assert tuya.get("light_mode") == LightMode.Effect
+    _report(tuya, 2, LightMode.Color)
+    assert tuya.get("light_mode") == LightMode.Color
+
+    _report(tuya, 5, "007803e801f4")  # hue 120, sat 1000, bri 500
+    x, y = ep.light_color.get("current_x"), ep.light_color.get("current_y")
+    h, s = xy_to_hs(x / 65535, y / 65535)
+    assert abs(h - 120) < 1 and s > 990
+    assert ep.level.get("current_level") == 127
+
+    _report(tuya, 6, "0a48ff000000ff00")  # fading, speed 48/64, red+green
+    assert tuya.get("string_effect") == StringEffect.Fading
+    assert tuya.get("effect_speed") == 75
+    assert tuya.get("effect_palette") == "ff000000ff00"
+
+    # white brightness is ignored in colour mode, used in white mode
+    _report(tuya, 3, 1000)
+    assert ep.level.get("current_level") == 127
+    _report(tuya, 2, LightMode.White)
+    _report(tuya, 3, 1000)
+    assert ep.level.get("current_level") == 254
+
+    # cached state is served for reads (device's own color cluster is stale)
+    success, _ = await ep.light_color.read_attributes(["current_x"])
+    assert success["current_x"] == x
+    assert ep.light_color.get("color_temperature") is None
+
+
+async def test_effect_and_speed(zigpy_device_from_v2_quirk):
+    """Test effect, speed and light mode writes."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req:
+        # not in effect mode: speed is only stored
+        _report(tuya, 2, LightMode.Color)
+        await tuya.write_attributes({"effect_speed": 100})
+        await wait_for_zigpy_tasks()
+        assert req.call_count == 0
+        assert tuya.get("effect_speed") == 100
+
+        # selecting an effect uses the stored speed (100% -> 64)
+        await tuya.write_attributes({"string_effect": StringEffect.Twinkle})
+        await wait_for_zigpy_tasks()
+        assert _sent(req) == [(2, LightMode.Effect), (6, "0464")]
+        # the device does not report the mode change itself
+        assert tuya.get("light_mode") == LightMode.Effect
+
+        # in effect mode the speed is sent at once, keeping effect and palette
+        req.reset_mock()
+        _report(tuya, 6, "0464ff0000")
+        await tuya.write_attributes({"effect_speed": 25})
+        await wait_for_zigpy_tasks()
+        assert _sent(req) == [(2, LightMode.Effect), (6, "0416ff0000")]
+
+
+async def test_color_commands(zigpy_device_from_v2_quirk):
+    """Test xy and colour temperature commands."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    ep.level.update_attribute("current_level", 254)
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req:
+        x, y = ha_hs_to_xy(240, 100)  # pure blue picked in HA
+        rsp = await ep.light_color.command(
+            Color.ServerCommandDefs.move_to_color.id,
+            round(x * 65535),
+            round(y * 65535),
+            0,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+        sent = _sent(req)
+        assert sent[0] == (2, LightMode.Color)
+        dp, value = sent[1]
+        assert dp == 5
+        assert 237 <= int(value[0:4], 16) <= 243
+        assert int(value[4:8], 16) >= 990
+        assert value[8:12] == "03e8"
+        assert tuya.get("light_mode") == LightMode.Color
+
+        # brightness in colour mode keeps the colour
+        req.reset_mock()
+        await ep.level.command(LevelControl.ServerCommandDefs.move_to_level.id, 127, 0)
+        dp, value = _sent(req)[0]
+        assert dp == 5
+        assert 237 <= int(value[0:4], 16) <= 243
+        assert value[8:12] == "01f4"
+
+        # white picked in HA uses the white mode
+        req.reset_mock()
+        x, y = ha_hs_to_xy(0, 0)
+        await ep.light_color.command(
+            Color.ServerCommandDefs.move_to_color.id,
+            round(x * 65535),
+            round(y * 65535),
+            0,
+        )
+        assert _sent(req) == [(2, LightMode.White), (3, 500)]
+
+        # brightness in white mode uses DP3
+        req.reset_mock()
+        await ep.level.command(LevelControl.ServerCommandDefs.move_to_level.id, 254, 0)
+        assert _sent(req) == [(3, 1000)]
+
+        # brightness in effect mode is only kept
+        req.reset_mock()
+        tuya.update_attribute("light_mode", LightMode.Effect)
+        await ep.level.command(LevelControl.ServerCommandDefs.move_to_level.id, 100, 0)
+        assert _sent(req) == []
+        assert ep.level.get("current_level") == 100
+
+
+async def test_light_entity_from_diagnostics():
+    """Test the light offers the effects and no extra selects are created."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        ieee = str(device.ieee)
+        light = device.get_platform_entity(Platform.LIGHT, f"{ieee}-1")
+        assert type(light) is MelineraLight
+        assert light.effect_list == ["off", *EFFECT_NAMES.values()]
+        assert light.supported_color_modes == {"xy"}
+        assert light.effect == "off"
+
+        platforms = {platform for platform, _ in device.platform_entities}
+        assert Platform.SELECT not in platforms
+        assert device.get_platform_entity(Platform.NUMBER, f"{ieee}-1-effect_speed")
+
+        tuya = device.device.endpoints[1].tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+        with mock.patch.object(
+            tuya.endpoint,
+            "request",
+            return_value=[0, foundation.Status.SUCCESS],
+        ) as req:
+            await light.async_turn_on(effect="Snow")
+            await gateway.async_block_till_done()
+            assert _sent(req) == [(2, LightMode.Effect), (6, "0164")]
+            assert light.effect == "Snow"
+
+            # picking a colour leaves the effect
+            req.reset_mock()
+            await light.async_turn_on(xy_color=ha_hs_to_xy(120, 100))
+            await gateway.async_block_till_done()
+            assert [dp for dp, _ in _sent(req)] == [2, 5]
+            assert light.effect == "off"
+
+
+async def test_soft_off(zigpy_device_from_v2_quirk):
+    """Test turning off darkens the LEDs but keeps the controller on."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        ep = device.device.endpoints[1]
+        tuya = ep.tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        with mock.patch.object(
+            tuya.endpoint, "request", return_value=[0, foundation.Status.SUCCESS]
+        ) as req:
+            # colour mode, then off: zero brightness, controller stays on
+            await light.async_turn_on(xy_color=ha_hs_to_xy(120, 100), brightness=200)
+            await gateway.async_block_till_done()
+            req.reset_mock()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert _sent(req) == [(3, 0), (2, LightMode.White), (3, 0)]
+            off_calls = [
+                c for c in req.call_args_list if c.kwargs["cluster"] == OnOff.cluster_id
+            ]
+            assert off_calls == []
+            assert not light.is_on
+
+            # the zero-brightness echo does not overwrite the kept brightness
+            _report(tuya, 3, 0)
+            assert ep.level.get("current_level") == 200
+            assert not light.is_on
+
+            # on restores the colour at the kept brightness
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            sent = _sent(req)
+            assert sent[0] == (2, LightMode.Color)
+            dp, value = sent[1]
+            assert dp == 5 and value[8:12] == f"{level_to_1000(200):04x}"
+            assert light.is_on
+
+            # an effect resumes as the effect
+            await light.async_turn_on(effect="Glow")
+            await gateway.async_block_till_done()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert light.effect == "off"
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            assert _sent(req)[:2] == [(2, LightMode.Effect), (6, "0f64")]
+            assert light.effect == "Glow"
+
+            # white resumes as white
+            await light.async_turn_on(xy_color=ha_hs_to_xy(0, 0))
+            await gateway.async_block_till_done()
+            req.reset_mock()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert _sent(req) == [(3, 0), (2, LightMode.White), (3, 0)]
+
+            # physical button: real off, then on resumes the white
+            light.async_transition_complete()
+            _report(tuya, 1, False)
+            ep.on_off.update_attribute("on_off", False)
+            req.reset_mock()
+            ep.on_off.update_attribute("on_off", True)
+            await gateway.async_block_till_done()
+            assert (2, LightMode.White) in _sent(req)
+            assert light.is_on
+
+
+async def test_stale_echoes_ignored(zigpy_device_from_v2_quirk):
+    """Test echoes of superseded writes do not overwrite the state."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    ep.level.update_attribute("current_level", 254)
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ):
+        # rapid off/on: white at zero, then colour again
+        await tuya.send_dps((DP_MODE, LightMode.White), (DP_WHITE, 0))
+        await tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8"))
+
+    tuya.update_attribute("light_mode", LightMode.Color)
+    # late echoes of written datapoints are skipped
+    _echo(tuya, DP_MODE, LightMode.White)
+    _echo(tuya, DP_WHITE, 0)
+    assert tuya.get("light_mode") == LightMode.Color
+    assert ep.level.get("current_level") == 254
+    # the string's own change (button) is always applied
+    _report(tuya, DP_MODE, LightMode.Effect)
+    assert tuya.get("light_mode") == LightMode.Effect
+
+
+async def test_overlapping_sends_not_interleaved(zigpy_device_from_v2_quirk):
+    """Test two command sequences sent at once are not mixed."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    tuya = dev.endpoints[1].tuya_manufacturer
+
+    async def slow_request(*args, **kwargs):
+        await asyncio.sleep(0)
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        await asyncio.gather(
+            tuya.send_dps((DP_WHITE, 0), (DP_MODE, LightMode.White), (DP_WHITE, 0)),
+            tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8")),
+        )
+    assert [dp for dp, _ in _sent(req)] == [3, 2, 3, 2, 5]
+
+
+@pytest.mark.parametrize("effect", ["Glow", None])
+async def test_rapid_toggling(effect):
+    """Test rapid on/off ends in the requested state, with late echoes."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        tuya = device.device.endpoints[1].tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        async def slow_request(*args, **kwargs):
+            await asyncio.sleep(0)
+            # the string echoes the white of a soft off late
+            _echo(tuya, DP_MODE, LightMode.White)
+            _echo(tuya, DP_WHITE, 0)
+            return [0, foundation.Status.SUCCESS]
+
+        with mock.patch.object(
+            tuya.endpoint, "request", side_effect=slow_request
+        ) as req:
+            if effect:
+                await light.async_turn_on(effect=effect)
+            else:
+                await light.async_turn_on(xy_color=ha_hs_to_xy(30, 100))
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+
+            for _ in range(5):
+                await asyncio.gather(
+                    light.async_turn_off(),
+                    light.async_turn_on(),
+                    light.async_turn_off(),
+                    light.async_turn_on(),
+                )
+                await gateway.async_block_till_done()
+                light.async_transition_complete()
+
+            assert light.is_on
+            if effect:
+                assert light.effect == effect
+                assert tuya.get("light_mode") == LightMode.Effect
+                assert _sent(req)[-2:] == [(2, LightMode.Effect), (6, "0f64")]
+            else:
+                assert tuya.get("light_mode") == LightMode.Color
+                dp, value = _sent(req)[-1]
+                assert dp == 5 and 28 <= int(value[0:4], 16) <= 33
+
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert not light.is_on
+            assert _sent(req)[-1] == (3, 0)
+
+
+async def test_rapid_toggling_coalesced(zigpy_device_from_v2_quirk):
+    """Test rapid on/off only sends the final state."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    tuya.update_attribute("light_mode", LightMode.Effect)
+    tuya.update_attribute("string_effect", StringEffect.Glow)
+    tuya.update_attribute("effect_speed", 100)
+
+    async def slow_request(*args, **kwargs):
+        await asyncio.sleep(0.01)
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        await asyncio.gather(
+            tuya.soft_off(),
+            tuya.resume(),
+            tuya.soft_off(),
+            tuya.resume(),
+            tuya.soft_off(),
+            tuya.resume(),
+        )
+    assert _sent(req) == [(2, LightMode.Effect), (6, "0f64")]
+    assert not tuya.get("soft_off")
+
+    # presses during a running sync collapse into one final sync
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        first = asyncio.ensure_future(tuya.soft_off())
+        await asyncio.sleep(0.005)
+        await asyncio.gather(tuya.resume(), tuya.soft_off(), tuya.resume(), first)
+    assert _sent(req) == [
+        (3, 0),
+        (2, LightMode.White),
+        (3, 0),
+        (2, LightMode.Effect),
+        (6, "0f64"),
+    ]
+
+
+def test_converters_malformed():
+    """Test malformed datapoints and edge colours fall back safely."""
+    assert hg06467.parse_hsb("bad") == (0, 0, 1000)
+    assert hg06467.dp6_to_effect("zz") == StringEffect.Steady
+    assert hg06467.dp6_to_speed("00zz") == hg06467.DEFAULT_SPEED
+    assert xy_to_hs(0.3, 0.0) == xy_to_hs(0.3, 1e-11)
+
+
+async def test_cluster_passthrough(zigpy_device_from_v2_quirk):
+    """Test other commands, attributes and edge cases of the clusters."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+
+    # colour report ignored outside colour mode
+    tuya.update_attribute("light_mode", LightMode.White)
+    ep.level.update_attribute("current_level", 254)
+    _report(tuya, DP_COLOR_DP, "007803e80000")
+    assert ep.level.get("current_level") == 254
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req:
+        # non-effect attributes go the normal Tuya way
+        await tuya.write_attributes({"light_mode": LightMode.Color})
+        await wait_for_zigpy_tasks()
+        assert _sent(req) == [(2, LightMode.Color)]
+
+        # other level and colour commands go to the device's own clusters
+        await ep.level.command(LevelControl.ServerCommandDefs.stop.id)
+        await ep.light_color.command(Color.ServerCommandDefs.stop_move_step.id)
+        assert {c.kwargs["cluster"] for c in req.call_args_list[1:]} == {
+            LevelControl.cluster_id,
+            Color.cluster_id,
+        }
+
+        # move to level 0 with on/off switches off
+        req.reset_mock()
+        await ep.level.command(
+            LevelControl.ServerCommandDefs.move_to_level_with_on_off.id, 0, 0
+        )
+        assert [c.kwargs["cluster"] for c in req.call_args_list] == [OnOff.cluster_id]
+
+        # move to level with on/off turns a switched-off string on
+        req.reset_mock()
+        ep.on_off.update_attribute("on_off", False)
+        await ep.level.command(
+            LevelControl.ServerCommandDefs.move_to_level_with_on_off.id, 100, 0
+        )
+        clusters = [c.kwargs["cluster"] for c in req.call_args_list]
+        assert clusters == [TuyaNewManufCluster.cluster_id, OnOff.cluster_id]
+
+
+async def test_light_effect_paths():
+    """Test effects from off, leaving an effect and resuming when unpowered."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        ep = device.device.endpoints[1]
+        tuya = ep.tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        with mock.patch.object(
+            tuya.endpoint, "request", return_value=[0, foundation.Status.SUCCESS]
+        ) as req:
+            # effect while the controller is off switches it on first
+            ep.on_off.update_attribute("on_off", False)
+            assert not light.is_on
+            await light.async_turn_on(effect="Snow", brightness=100)
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+            assert light.is_on
+            assert light.effect == "Snow"
+            assert req.call_args_list[0].kwargs["cluster"] == OnOff.cluster_id
+
+            # effect "off" goes back to the last colour
+            req.reset_mock()
+            await light.async_turn_on(effect="off")
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+            assert light.effect == "off"
+            assert [dp for dp, _ in _sent(req)][:2] == [2, 5]
+
+            # soft off, then the button switches off; turning on powers on
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            ep.on_off.update_attribute("on_off", False)
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            assert req.call_args_list[0].kwargs["cluster"] == OnOff.cluster_id
+            assert light.is_on
