@@ -289,7 +289,7 @@ async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
     )
     assert cover_listener.attribute_updates[0][1] == 25
 
-    # DP 3 (position control echo) also updates the position
+    # DP 3 (reported position) also updates the position
     tuya_cluster.handle_get_data(
         TuyaCommand(
             status=0,
@@ -334,7 +334,7 @@ async def test_zemismart_zm25el_control_command(
 
 
 async def test_zemismart_zm25el_go_to_lift_percentage(zigpy_device_from_v2_quirk):
-    """Test that go_to_lift_percentage sends the inverted position on DP 3."""
+    """Test that go_to_lift_percentage sends the inverted position on DP 2 and DP 3."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
     ep = quirked.endpoints[1]
@@ -349,7 +349,8 @@ async def test_zemismart_zm25el_go_to_lift_percentage(zigpy_device_from_v2_quirk
         )
         await wait_for_zigpy_tasks()
 
-    assert (3, 75) in _sent_datapoints(req_mock)
+    # DP 2 (target) first, as the legacy quirk and tested hardware expect
+    assert _sent_datapoints(req_mock) == [(2, 75), (3, 75)]
 
 
 async def test_zemismart_zm25el_battery_report(zigpy_device_from_v2_quirk):

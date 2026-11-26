@@ -719,6 +719,8 @@ class ClickControl(t.enum8):
     TuyaQuirkBuilder("_TZE200_68nvbio9", "TS0601")
     .applies_to("_TZE200_pw7mji0l", "TS0601")
     # Tuya reports 0=closed / 100=open, so keep the default inversion.
+    # DP2 is the target and DP3 the reported position. Both map to the lift
+    # position, and go-to-position writes DP2 first, as tested on hardware.
     .tuya_cover(control_dp=1, position_state_dp=2, position_control_dp=3)
     .tuya_battery(dp_id=13, battery_type=BatterySize.Built_in, battery_qty=1)
     .tuya_enum(
