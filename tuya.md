@@ -116,7 +116,7 @@ These methods expose an entity to Home Assistant. The following examples do not 
 
 #### tuya_switch
 
-Adds a switch entity.
+Adds a switch entity. `primary=True` makes it the primary entity of its device, or of its child device with `child_device_id`.
 
 ```python
 .tuya_switch(
@@ -125,6 +125,8 @@ Adds a switch entity.
     entity_type=EntityType.STANDARD,
     translation_key="valve_on_off_1",
     fallback_name="Valve 1",
+    child_device_id="1",
+    primary=True,
 )
 ```
 
@@ -168,8 +170,8 @@ Adds a number entity.
     min_value=0,
     max_value=1440,
     step=1,
-    translation_key="valve_countdown_1",
-    fallback_name="Irrigation time 1",
+    translation_key="valve_countdown",
+    fallback_name="Irrigation time",
 )
 ```
 
@@ -199,8 +201,8 @@ Adds a sensor entity. Sensors can't return string values, you also need to ensur
     device_class=SensorDeviceClass.DURATION,
     unit=UnitOfTime.SECONDS,
     entity_type=EntityType.STANDARD,
-    translation_key="irrigation_duration_1",
-    fallback_name="Irrigation duration 1",
+    translation_key="irrigation_duration",
+    fallback_name="Irrigation duration",
 )
 ```
 

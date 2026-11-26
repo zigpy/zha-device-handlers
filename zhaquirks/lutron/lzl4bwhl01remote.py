@@ -1,6 +1,7 @@
 """Device handler for Lutron LZL4BWHL01 Remote."""
 
 from zigpy.profiles import zll
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -12,6 +13,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import GroupBoundCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -133,3 +135,32 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             PARAMS: {"step_mode": 1},
         },
     }
+
+    # The on and off buttons send one command per press. The dim buttons are not
+    # mapped: whether a short tap also sends a step (and a stop) is unknown, so the
+    # step cannot be told apart from a hold.
+    button_event_entities = tuple(
+        ButtonEventMetadata(
+            events=[
+                # The level tells the buttons apart, the transition time is incidental
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    event_data={
+                        COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
+                        CLUSTER_ID: LevelControl.cluster_id,
+                        ENDPOINT_ID: 1,
+                        PARAMS: {"level": level},
+                    },
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix=unique_id_suffix,
+            translation_key=translation_key,
+            fallback_name=fallback_name,
+        )
+        for level, unique_id_suffix, translation_key, fallback_name in (
+            (254, "button_on", "on_button", "On button"),
+            (0, "button_off", "off_button", "Off button"),
+        )
+    )

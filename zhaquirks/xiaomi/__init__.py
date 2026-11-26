@@ -522,6 +522,13 @@ class BasicCluster(XiaomiCluster, Basic):
         """Cluster attributes."""
 
 
+class AqaraSwitchOperationMode(t.enum8):
+    """Aqara switch operation mode attribute values (attribute 0x0009)."""
+
+    Command = 0x00  # sends OnOff commands
+    Event = 0x01  # reports the press type
+
+
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 

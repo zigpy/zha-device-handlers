@@ -304,6 +304,19 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .replaces(BasicClusterWithLedGen3)
+    # Each outlet is a child device: ep1 is the left outlet, ep2 the right one
+    .child_device(
+        "left",
+        endpoint_id=1,
+        translation_key="left",
+        fallback_name="Left",
+    )
+    .child_device(
+        "right",
+        endpoint_id=2,
+        translation_key="right",
+        fallback_name="Right",
+    )
     # The reset/countdown entities existed before the cluster attributes were
     # renamed; their unique_id_suffix is pinned to the old attribute names
     # (distinguished per outlet by endpoint_id) to avoid orphaning existing
@@ -314,8 +327,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         unique_id_suffix="reset_summation_delivered",
         endpoint_id=1,
-        translation_key="reset_total_energy_left",
-        fallback_name="Reset left total energy",  # ep1 is left
+        translation_key="reset_total_energy",
+        fallback_name="Reset total energy",
     )
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
@@ -323,8 +336,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         unique_id_suffix="reset_summation_delivered",
         endpoint_id=2,
-        translation_key="reset_total_energy_right",
-        fallback_name="Reset right total energy",  # ep2 is right
+        translation_key="reset_total_energy",
+        fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
@@ -336,8 +349,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_off_left",
-        fallback_name="Countdown to turn off left",
+        translation_key="countdown_to_turn_off",
+        fallback_name="Countdown to turn off",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
@@ -349,8 +362,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_off_right",
-        fallback_name="Countdown to turn off right",
+        translation_key="countdown_to_turn_off",
+        fallback_name="Countdown to turn off",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
@@ -362,8 +375,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_on_left",
-        fallback_name="Countdown to turn on left",
+        translation_key="countdown_to_turn_on",
+        fallback_name="Countdown to turn on",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
@@ -375,8 +388,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_on_right",
-        fallback_name="Countdown to turn on right",
+        translation_key="countdown_to_turn_on",
+        fallback_name="Countdown to turn on",
     )
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,
@@ -397,6 +410,19 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .replaces(BasicClusterWithLedGen3)
+    # Each outlet is a child device: ep1 is the bottom outlet, ep2 the top one
+    .child_device(
+        "bottom",
+        endpoint_id=1,
+        translation_key="bottom",
+        fallback_name="Bottom",
+    )
+    .child_device(
+        "top",
+        endpoint_id=2,
+        translation_key="top",
+        fallback_name="Top",
+    )
     # The reset/countdown entities existed before the cluster attributes were
     # renamed; their unique_id_suffix is pinned to the old attribute names
     # (distinguished per outlet by endpoint_id) to avoid orphaning existing
@@ -407,8 +433,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         unique_id_suffix="reset_summation_delivered",
         endpoint_id=1,
-        translation_key="reset_total_energy_bottom",
-        fallback_name="Reset bottom total energy",  # ep1 is bottom
+        translation_key="reset_total_energy",
+        fallback_name="Reset total energy",
     )
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
@@ -416,8 +442,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         unique_id_suffix="reset_summation_delivered",
         endpoint_id=2,
-        translation_key="reset_total_energy_top",
-        fallback_name="Reset top total energy",  # ep2 is top
+        translation_key="reset_total_energy",
+        fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
@@ -429,8 +455,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_off_bottom",
-        fallback_name="Countdown to turn off bottom",
+        translation_key="countdown_to_turn_off",
+        fallback_name="Countdown to turn off",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
@@ -442,8 +468,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_off_top",
-        fallback_name="Countdown to turn off top",
+        translation_key="countdown_to_turn_off",
+        fallback_name="Countdown to turn off",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
@@ -455,8 +481,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_on_bottom",
-        fallback_name="Countdown to turn on bottom",
+        translation_key="countdown_to_turn_on",
+        fallback_name="Countdown to turn on",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
@@ -468,8 +494,8 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="countdown_to_turn_on_top",
-        fallback_name="Countdown to turn on top",
+        translation_key="countdown_to_turn_on",
+        fallback_name="Countdown to turn on",
     )
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,

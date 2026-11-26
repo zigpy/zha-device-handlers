@@ -1,8 +1,10 @@
 """Xiaomi aqara button sensor."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -111,3 +113,37 @@ class SwitchAQ2(XiaomiQuickInitDevice):
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 4},
         },
     }
+
+    # The device counts the presses itself: a single press is reported as on/off,
+    # more presses as their count
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, SHORT_PRESS),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, DOUBLE_PRESS),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(TRIPLE_PRESS, TRIPLE_PRESS),
+                    press_count=3,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(QUADRUPLE_PRESS, QUADRUPLE_PRESS),
+                    press_count=4,
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=1,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
