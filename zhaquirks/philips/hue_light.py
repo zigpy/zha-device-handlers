@@ -218,6 +218,17 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
+    .applies_to(SIGNIFY, "1741430P7")
+    .friendly_name(
+        model="Hue Lily outdoor spotlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
     .applies_to(SIGNIFY, "LCL008")
     .friendly_name(
         model="Hue Lightstrip Solo",
