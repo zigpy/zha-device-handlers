@@ -10,7 +10,7 @@ from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from zhaquirks.builder import EntityType
+from zhaquirks.builder import PERCENTAGE, EntityType
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -22,13 +22,12 @@ def is_smartpad_ts0601(device: Device) -> bool:
 
 
 class LedColor(t.enum8):
-    """DP103/104 colors; owner confirmed their function on 2026-11-14."""
+    """DP103/104 colors; all nine confirmed by the owner on 2026-11-26."""
 
     Red = 0
     Blue = 1
     Green = 2
     White = 3
-    # Related-OEM palette candidates; values 4-8 are not physically confirmed.
     Yellow = 4
     Magenta = 5
     Cyan = 6
@@ -50,8 +49,8 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
             "relay_2",
             "led_on_color",
             "led_off_color",
-            "dp102_raw",
-            "dp16_raw",
+            "led_brightness",
+            "led_enable",
         }
         records = self._write_attr_records(attributes)
         for record in records:
@@ -59,9 +58,15 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
             value = record.value.value
             if (
                 name not in allowed
-                or (name.startswith("led_") and int(value) not in range(9))
-                or (name == "dp102_raw" and not 0 <= int(value) <= 100)
-                or (name == "dp16_raw" and int(value) not in (0, 1))
+                or (
+                    name in {"led_on_color", "led_off_color"}
+                    and int(value) not in range(9)
+                )
+                or (name == "led_brightness" and not 0 <= int(value) <= 100)
+                or (
+                    name in {"relay_1", "relay_2", "led_enable"}
+                    and int(value) not in (0, 1)
+                )
             ):
                 return [
                     [
@@ -94,31 +99,31 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
         103,
         "led_on_color",
         LedColor,
-        translation_key="smartpad_led_on_color",
-        fallback_name="LED ON color",
+        translation_key="on_led_color",
+        fallback_name="On LED color",
     )
     .tuya_enum(
         104,
         "led_off_color",
         LedColor,
-        translation_key="smartpad_led_off_color",
-        fallback_name="LED OFF color",
+        translation_key="off_led_color",
+        fallback_name="Off LED color",
     )
     .tuya_number(
         102,
         t.uint32_t,
-        "dp102_raw",
+        "led_brightness",
         min_value=0,
         max_value=100,
         step=1,
-        unit="%",
+        unit=PERCENTAGE,
         mode="slider",
         translation_key="smartpad_brightness",
         fallback_name="LED brightness",
     )
     .tuya_sensor(
         15,
-        "dp15_raw",
+        "led_mode",
         t.uint8_t,
         converter=int,
         entity_type=EntityType.DIAGNOSTIC,
@@ -126,7 +131,7 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
         fallback_name="LED mode",
     )
     .tuya_switch(
-        16, "dp16_raw", translation_key="smartpad_dp16", fallback_name="LED on/off"
+        16, "led_enable", translation_key="led_indicator", fallback_name="LED indicator"
     )
     .command_button(
         "query_data",
