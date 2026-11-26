@@ -4,11 +4,11 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent, ClusterType
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import Status
+from zigpy.zcl.foundation import Status, WriteAttributesStatusRecord
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -538,10 +538,10 @@ async def test_d1_input_mode_1_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Input 1 with new mode, input 2 with default Toggle
+        # Input 1 with new mode, input 2 with its factory default Dimmer_single
         expected_actions = _build_d1_expected_actions(
             0, 2, mode
-        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Toggle)
+        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Dimmer_single)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
@@ -573,9 +573,9 @@ async def test_d1_input_mode_2_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Input 1 with default Toggle, input 2 with new mode
+        # Input 1 with its factory default Dimmer_single, input 2 with new mode
         expected_actions = _build_d1_expected_actions(
-            0, 2, DimmerInputMode.Toggle
+            0, 2, DimmerInputMode.Dimmer_single
         ) + _build_d1_expected_actions(1, 3, mode)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
@@ -1310,19 +1310,25 @@ async def test_j1_config_sync_skips_failed_write(ubisys_j1):
     wc_cluster = ubisys_j1.endpoints[1].window_covering
     wc_listener = ClusterListener(wc_cluster)
 
-    wc_cluster._handle_config_attr_sync(
-        AttributeWrittenEvent(
-            device_ieee=str(ubisys_j1.ieee),
-            endpoint_id=1,
-            cluster_type=0,
-            cluster_id=WindowCovering.cluster_id,
-            attribute_name="window_covering_type_config",
-            attribute_id=0x0000,
-            manufacturer_code=0x10F2,
-            value=WindowCovering.WindowCoveringType.Shutter,
-            status=Status.UNSUPPORTED_ATTRIBUTE,
+    with mock.patch.object(
+        wc_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    WriteAttributesStatusRecord(
+                        status=Status.UNSUPPORTED_ATTRIBUTE,
+                        attrid=UbisysWindowCovering.AttributeDefs.window_covering_type_config.id,
+                    )
+                ]
+            ]
+        ),
+    ):
+        await wc_cluster.write_attributes(
+            {
+                UbisysWindowCovering.AttributeDefs.window_covering_type_config.name: WindowCovering.WindowCoveringType.Shutter
+            }
         )
-    )
 
     # Standard attr should NOT have been updated
     assert (

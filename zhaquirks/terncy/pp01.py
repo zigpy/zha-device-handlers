@@ -25,6 +25,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.terncy import (
+    BUTTON_EVENT_ENTITIES,
     BUTTON_TRIGGERS,
     IlluminanceMeasurementCluster,
     MotionClusterLeft,
@@ -100,3 +101,5 @@ class TerncyAwarenessSwitch(CustomDevice):
     }
 
     device_automation_triggers = BUTTON_TRIGGERS
+
+    button_event_entities = BUTTON_EVENT_ENTITIES
