@@ -1,9 +1,12 @@
 """Tests the Bosch thermostats quirk."""
 
+import asyncio
 from unittest import mock
 
+from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
@@ -11,6 +14,7 @@ import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
+    BoschValveAdaptStatus,
 )
 
 zhaquirks.setup()
@@ -653,6 +657,153 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(
             ]
             == ControlSequenceOfOperation.Cooling_Only
         )
+
+
+def _bosch_trv_entity(device, attribute_name):
+    """Return the quirk entity metadata of an attribute."""
+
+    entry = getattr(device, QUIRK_REGISTRY_ENTRY_ATTR)
+    (metadata,) = (
+        em
+        for em in entry.zha_device_factory.quirk_definition.entity_metadata
+        if getattr(em, "attribute_name", None) == attribute_name
+    )
+    return metadata
+
+
+def test_bosch_radiator_thermostat_II_error_state(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II error state shows the active error codes."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    error_state = _bosch_trv_entity(
+        device, BoschTrvThermostatCluster.AttributeDefs.error_state.name
+    )
+
+    for value, text in (
+        (0x00, "ok"),
+        (0x02, "E02"),
+        (0x05, "E01 - E03"),
+        (0x80, "E08"),
+        (0xFF, "E01 - E02 - E03 - E04 - E05 - E06 - E07 - E08"),
+    ):
+        assert error_state.attribute_converter(t.bitmap8(value)) == text
+
+
+async def test_bosch_radiator_thermostat_II_automatic_valve_adapt(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a valve adaptation requested by the TRV is started, without looping."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    attrs = BoschTrvThermostatCluster.AttributeDefs
+    ready = BoschValveAdaptStatus.ReadyToCalibrate
+    running = BoschValveAdaptStatus.CalibrationInProgress
+    error = BoschValveAdaptStatus.Error
+    success = BoschValveAdaptStatus.Success
+
+    async def status(value):
+        cluster.update_attribute(attrs.valve_adapt_status, value)
+        await asyncio.sleep(0)
+
+    async def requested(value):
+        cluster.update_attribute(attrs.automatic_valve_adapt.id, value)
+        await asyncio.sleep(0)
+
+    with mock.patch.object(cluster, "request", mock.AsyncMock()) as request:
+        # not requested: never started
+        await requested(0)
+        await status(ready)
+        await status(error)
+        assert request.await_count == 0
+
+        # requested while already ready to calibrate: started
+        await status(ready)
+        await requested(1)
+        assert request.await_count == 1
+        assert (
+            request.await_args.args[1]
+            == BoschTrvThermostatCluster.ServerCommandDefs.calibrate_valve.id
+        )
+        assert request.await_args.kwargs["manufacturer"] == 0x1209
+
+        # the request reported again: not sent again
+        await requested(1)
+        assert request.await_count == 1
+
+        # the TRV ignored the command and reports ready again: sent again
+        await status(ready)
+        assert request.await_count == 2
+
+        # the adaptation ran and failed: not repeated
+        for value in (running, error, error, ready, error):
+            await status(value)
+        assert request.await_count == 2
+
+        # a successful adaptation ends the request, a new one can start
+        await status(success)
+        await status(ready)
+        assert request.await_count == 3
+
+        # error right after the command, without a run: not repeated either
+        await status(error)
+        await status(error)
+        assert request.await_count == 3
+
+        # the TRV clearing and raising its request again is a new request
+        await requested(0)
+        await requested(1)
+        assert request.await_count == 4
+
+        # not delivered: retried on the next status report
+        await status(success)
+        request.side_effect = TimeoutError
+        await status(ready)
+        assert request.await_count == 5
+        request.side_effect = None
+        await status(ready)
+        assert request.await_count == 6
+        await status(running)
+        await status(error)
+        assert request.await_count == 6
+
+    # reports arriving while the command is still being sent: sent only once
+    await status(success)
+    sent = asyncio.Event()
+    release = asyncio.Event()
+
+    async def slow_request(*args, **kwargs):
+        sent.set()
+        await release.wait()
+
+    with mock.patch.object(
+        cluster, "request", mock.AsyncMock(side_effect=slow_request)
+    ) as request:
+        await status(ready)
+        await sent.wait()
+        await status(ready)
+        await requested(1)
+        assert request.await_count == 1
+        release.set()
+        await asyncio.sleep(0)
+        assert request.await_count == 1
+
+
+def test_bosch_radiator_thermostat_II_battery_low(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II battery low uses the alarm bits only."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    battery_low = _bosch_trv_entity(
+        device, PowerConfiguration.AttributeDefs.battery_alarm_state.name
+    )
+
+    # bits 0-3, 10-13 and 20-23 are the alarms of battery sources 1, 2 and 3
+    low_bits = {*range(4), *range(10, 14), *range(20, 24)}
+    assert battery_low.attribute_converter(t.bitmap32(0)) is False
+    for bit in range(32):
+        assert battery_low.attribute_converter(t.bitmap32(1 << bit)) is (
+            bit in low_bits
+        ), bit
 
 
 async def test_bosch_radiator_thermostat_II_system_mode_report_ignored(

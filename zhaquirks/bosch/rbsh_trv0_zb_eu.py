@@ -2,8 +2,12 @@
 
 from typing import Any, Final
 
+from zha.application.platforms.number import BoschThermostatLocalTempCalibration
+from zha.application.platforms.sensor import SetpointChangeSource
+from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import (
     ControlSequenceOfOperation,
     Thermostat,
@@ -12,13 +16,19 @@ from zigpy.zcl.clusters.hvac import (
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityFilter,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
+    UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
+
+# Bosch manufacturer code, sent with all manufacturer specific requests.
+BOSCH_MANUFACTURER_CODE = 0x1209
 
 """Bosch specific thermostat attribute ids."""
 
@@ -39,6 +49,12 @@ WINDOW_OPEN_ATTR_ID = 0x4042
 
 # Boost heating preset mode.
 BOOST_HEATING_ATTR_ID = 0x4043
+
+# Error state bitmap, bit n set means error E(n+1).
+ERROR_STATE_ATTR_ID = 0x5000
+
+# Set by the TRV when it requests a valve adaptation (e.g. after an update).
+AUTOMATIC_VALVE_ADAPT_ATTR_ID = 0x5010
 
 """Bosch specific user interface attribute ids."""
 
@@ -132,6 +148,22 @@ BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
     min_interval=10, max_interval=10800, reportable_change=1
 )
 
+"""Valve adapt status values in which a valve adaptation can be started."""
+VALVE_ADAPT_STARTABLE = (
+    BoschValveAdaptStatus.ReadyToCalibrate,
+    BoschValveAdaptStatus.Error,
+)
+
+"""Battery alarm state bits 0-3, 10-13 and 20-23: low battery on any source."""
+BATTERY_LOW_MASK = 0x00F03C0F
+
+
+def format_error_state(value: int) -> str:
+    """Return "ok" or the active error codes, e.g. "E01 - E03"."""
+
+    errors = [f"E{bit + 1:02d}" for bit in range(8) if value & (1 << bit)]
+    return " - ".join(errors) if errors else "ok"
+
 
 def get_attribute_id_or_name(
     attribute: ZCLAttributeDef, attributes: dict[str | int, Any] | list[int | str]
@@ -155,7 +187,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         operating_mode: Final = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         pi_heating_demand: Final = ZCLAttributeDef(
@@ -163,25 +195,44 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.uint8_t,
             zcl_type=DataTypeId.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         valve_adapt_status: Final = ZCLAttributeDef(
             id=VALVE_ADAPT_STATUS_ATTR_ID,
             type=BoschValveAdaptStatus,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=WINDOW_OPEN_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         boost_heating: Final = ZCLAttributeDef(
-            id=BOOST_HEATING_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=BOOST_HEATING_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         remote_temperature: Final = ZCLAttributeDef(
-            id=REMOTE_TEMPERATURE_ATTR_ID, type=t.int16s, is_manufacturer_specific=True
+            id=REMOTE_TEMPERATURE_ATTR_ID,
+            type=t.int16s,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        error_state: Final = ZCLAttributeDef(
+            id=ERROR_STATE_ATTR_ID,
+            type=t.bitmap8,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        automatic_valve_adapt: Final = ZCLAttributeDef(
+            id=AUTOMATIC_VALVE_ADAPT_ATTR_ID,
+            type=t.uint8_t,
+            zcl_type=DataTypeId.enum8,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
@@ -190,8 +241,82 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         calibrate_valve: Final = ZCLCommandDef(
             id=CALIBRATE_VALVE_CMD_ID,
             schema={},
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
+
+    # Progress of the valve adaptation requested by the TRV: whether the
+    # calibration command was sent, is still being sent, and whether the TRV
+    # has run an adaptation since. A valve that keeps failing is not adapted
+    # again on every status report.
+    _valve_adapt_sent: bool = False
+    _valve_adapt_sending: bool = False
+    _valve_adapt_ran: bool = False
+
+    def _update_attribute(
+        self, attrid: int | t.uint16_t | foundation.ZCLAttributeDef, value: Any
+    ) -> None:
+        """Track the valve adaptation requested by the TRV."""
+
+        super()._update_attribute(attrid, value)
+
+        if isinstance(attrid, foundation.ZCLAttributeDef):
+            attrid = attrid.id
+
+        if attrid == AUTOMATIC_VALVE_ADAPT_ATTR_ID:
+            if not value:
+                self._reset_valve_adaptation()
+                return
+            ignored = False
+        elif attrid == VALVE_ADAPT_STATUS_ATTR_ID:
+            if value == BoschValveAdaptStatus.Success:
+                self._reset_valve_adaptation()
+                return
+            if value == BoschValveAdaptStatus.CalibrationInProgress:
+                self._valve_adapt_ran = True
+                return
+            # still ready to calibrate after the command: the TRV ignored it
+            ignored = value == BoschValveAdaptStatus.ReadyToCalibrate
+        else:
+            return
+
+        self._check_valve_adaptation(ignored)
+
+    def _reset_valve_adaptation(self) -> None:
+        """Forget the adaptation, the next request starts from scratch."""
+
+        self._valve_adapt_sent = False
+        self._valve_adapt_ran = False
+
+    def _check_valve_adaptation(self, ignored: bool) -> None:
+        """Start the requested valve adaptation if the TRV allows it.
+
+        The command is sent again only when the TRV reports ready to calibrate
+        again without having run an adaptation, i.e. it ignored the command.
+        After a run, or an error right after the command, it is not.
+        """
+
+        if (
+            self.get(self.AttributeDefs.automatic_valve_adapt.name)
+            and self.get(self.AttributeDefs.valve_adapt_status.name)
+            in VALVE_ADAPT_STARTABLE
+            and not self._valve_adapt_sending
+            and not self._valve_adapt_ran
+            and (not self._valve_adapt_sent or ignored)
+        ):
+            self._valve_adapt_sent = True
+            self._valve_adapt_sending = True
+            self.create_catching_task(self._start_valve_adaptation())
+
+    async def _start_valve_adaptation(self) -> None:
+        """Send the calibration command, allow a retry if it was not delivered."""
+
+        try:
+            await self.calibrate_valve()
+        except (TimeoutError, ZigbeeException):
+            self._valve_adapt_sent = False
+            raise
+        finally:
+            self._valve_adapt_sending = False
 
     async def write_attributes(
         self,
@@ -432,27 +557,27 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             id=SCREEN_ORIENTATION_ATTR_ID,
             type=BoschDisplayOrientation,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_on_time: Final = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_brightness: Final = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         displayed_temperature: Final = ZCLAttributeDef(
             id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
 
@@ -495,19 +620,104 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="window_open",
         fallback_name="Window open",
     )
-    # Remote temperature.
+    # Remote temperature: must be resent at least every 30 minutes, the TRV
+    # falls back to its internal sensor otherwise.
     .number(
         BoschThermostatCluster.AttributeDefs.remote_temperature.name,
         BoschThermostatCluster.cluster_id,
-        min_value=5,
-        max_value=30,
+        min_value=0,
+        max_value=35,
         step=0.1,
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="remote_temperature",
         fallback_name="Remote temperature",
+    )
+    # Local temperature offset: replaces the default ZHA entity, which is not
+    # created as long as the attribute was never read.
+    .removes_entity(
+        EntityFilter(
+            entity_cls=BoschThermostatLocalTempCalibration,
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+        )
+    )
+    .number(
+        Thermostat.AttributeDefs.local_temperature_calibration.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-5,
+        max_value=5,
+        step=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        mode="box",
+        multiplier=0.1,
+        attribute_initialized_from_cache=False,
+        unique_id_suffix=f"{Thermostat.cluster_id}-local_temperature_calibration",
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    # Setpoint change source: replaces the default ZHA sensor, which does not
+    # configure reporting.
+    .removes_entity(
+        EntityFilter(
+            entity_cls=SetpointChangeSource,
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+        )
+    )
+    .enum(
+        Thermostat.AttributeDefs.setpoint_change_source.name,
+        Thermostat.SetpointChangeSource,
+        BoschThermostatCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        unique_id_suffix=f"{Thermostat.cluster_id}-setpoint_change_source",
+        translation_key="setpoint_change_source",
+        fallback_name="Setpoint change source",
+    )
+    # Error state: "ok" or the active error codes.
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.error_state.name,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=format_error_state,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        translation_key="error_status",
+        fallback_name="Error status",
+    )
+    # Valve adaptation requested by the TRV, started automatically.
+    .binary_sensor(
+        BoschThermostatCluster.AttributeDefs.automatic_valve_adapt.name,
+        BoschThermostatCluster.cluster_id,
+        attribute_converter=bool,
+        attribute_initialized_from_cache=False,
+        translation_key="automatic_valve_adapt",
+        fallback_name="Automatic valve adaptation requested",
+    )
+    # Low battery.
+    .binary_sensor(
+        PowerConfiguration.AttributeDefs.battery_alarm_state.name,
+        PowerConfiguration.cluster_id,
+        device_class=BinarySensorDeviceClass.BATTERY,
+        attribute_converter=lambda value: bool(value & BATTERY_LOW_MASK),
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        translation_key="battery_low",
+        fallback_name="Battery low",
+    )
+    # Child lock: an on/off switch next to the multi-level default select,
+    # disabled by default so existing setups keep using the select.
+    .switch(
+        UserInterface.AttributeDefs.keypad_lockout.name,
+        BoschUserInterfaceCluster.cluster_id,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        initially_disabled=True,
+        translation_key="child_lock",
+        fallback_name="Child lock",
     )
     # Valve calibration.
     .command_button(
