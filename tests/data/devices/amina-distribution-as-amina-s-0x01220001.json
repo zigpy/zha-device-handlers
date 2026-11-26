@@ -1263,7 +1263,7 @@
         "translation_key": "hardware_current_limit",
         "translation_placeholders": null,
         "device_class": "current",
-        "state_class": "measurement",
+        "state_class": null,
         "entity_category": "diagnostic",
         "entity_registry_enabled_default": true,
         "enabled": true,
