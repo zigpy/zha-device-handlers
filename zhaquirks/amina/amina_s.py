@@ -173,30 +173,32 @@ class AminaControlCluster(CustomCluster):
             manufacturer_code=AMINA_MANUFACTURER_CODE,
         )
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the cluster."""
-        super().__init__(*args, **kwargs)
-        self._last_total_active_energy: int | None = None
+    # A lower total active energy reading, held back until it is read again
+    _pending_total_active_energy: int | None = None
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         # Total active energy is a lifetime counter, exposed as a
         # `total_increasing` sensor. The charger occasionally returns a corrupt,
         # lower value, which would be recorded as a meter reset and inflate the
-        # long-term statistics once the real value returns. Drop those reads.
-        # The last value is only kept in memory, so a genuine counter reset is
-        # picked up after the next restart.
+        # long-term statistics once the real value returns. Drop a lower reading
+        # unless the charger returns the same value twice in a row, which lets a
+        # genuine counter reset through. The cached value is the baseline, so this
+        # also holds right after a restart.
         if attrid == self.AttributeDefs.total_active_energy.id and value is not None:
+            last = self.get(attrid)
             if (
-                self._last_total_active_energy is not None
-                and value < self._last_total_active_energy
+                last is not None
+                and value < last
+                and value != self._pending_total_active_energy
             ):
                 self.debug(
                     "Ignoring total_active_energy decrease from %s to %s",
-                    self._last_total_active_energy,
+                    last,
                     value,
                 )
+                self._pending_total_active_energy = value
                 return
-            self._last_total_active_energy = value
+            self._pending_total_active_energy = None
 
         super()._update_attribute(attrid, value)
 
@@ -380,7 +382,6 @@ class AminaLevelControl(CustomCluster, LevelControl):
         suggested_display_precision=0,
         unit=UnitOfElectricCurrent.AMPERE,
         device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         translation_key="hardware_current_limit",
@@ -473,7 +474,7 @@ class AminaLevelControl(CustomCluster, LevelControl):
         translation_key="alarm_active",
         fallback_name="Alarm active",
     )
-    # Energy counters
+    # Energy counters, read when total active power updates (including on startup)
     .sensor(
         attribute_name=AminaControlCluster.AttributeDefs.total_active_energy.name,
         cluster_id=AminaControlCluster.cluster_id,
@@ -483,7 +484,6 @@ class AminaLevelControl(CustomCluster, LevelControl):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        attribute_initialized_from_cache=False,
         translation_key="total_active_energy",
         fallback_name="Total energy",
     )
@@ -496,7 +496,6 @@ class AminaLevelControl(CustomCluster, LevelControl):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL,
-        attribute_initialized_from_cache=False,
         translation_key="last_session_energy",
         fallback_name="Last session energy",
     )

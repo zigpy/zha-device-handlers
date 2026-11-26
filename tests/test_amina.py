@@ -197,11 +197,50 @@ def test_total_active_energy_never_decreases(amina_device):
     cluster.update_attribute(attr_id, 1500)
     assert cluster.get(attr_id) == 1500
 
+    # Two different lower readings in a row are both ignored
+    cluster.update_attribute(attr_id, 10)
+    cluster.update_attribute(attr_id, 20)
+    assert cluster.get(attr_id) == 1500
+
     # Other attributes are unaffected
     session_attr_id = AminaControlCluster.AttributeDefs.last_session_energy.id
     cluster.update_attribute(session_attr_id, 500)
     cluster.update_attribute(session_attr_id, 0)
     assert cluster.get(session_attr_id) == 0
+
+
+def test_total_active_energy_restored_from_cache(amina_device):
+    """Test that the cache restored on startup is the baseline for decreases."""
+    cluster = amina_device.endpoints[AMINA_ENDPOINT_ID].amina_control
+    attr_def = AminaControlCluster.AttributeDefs.total_active_energy
+
+    # zigpy restores the attribute cache without calling `_update_attribute`
+    cluster._attr_cache.set_value(attr_def, 1000)
+
+    cluster.update_attribute(attr_def.id, 0)
+    assert cluster.get(attr_def.id) == 1000
+
+
+def test_total_active_energy_reset(amina_device):
+    """Test that a lower reading is accepted once it is read twice in a row."""
+    cluster = amina_device.endpoints[AMINA_ENDPOINT_ID].amina_control
+    attr_id = AminaControlCluster.AttributeDefs.total_active_energy.id
+
+    cluster.update_attribute(attr_id, 1000)
+    cluster.update_attribute(attr_id, 5)
+    assert cluster.get(attr_id) == 1000
+
+    cluster.update_attribute(attr_id, 5)
+    assert cluster.get(attr_id) == 5
+
+    cluster.update_attribute(attr_id, 7)
+    assert cluster.get(attr_id) == 7
+
+    # A higher reading in between starts the count again
+    cluster.update_attribute(attr_id, 1)
+    cluster.update_attribute(attr_id, 7)
+    cluster.update_attribute(attr_id, 1)
+    assert cluster.get(attr_id) == 7
 
 
 @pytest.mark.parametrize(
