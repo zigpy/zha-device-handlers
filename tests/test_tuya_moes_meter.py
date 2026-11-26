@@ -356,3 +356,22 @@ async def test_refresh_measurements(meter):
         if call.kwargs["cluster"] == TUYA_CLUSTER_ID
     ]
     assert call.kwargs["data"].endswith(datapoint(44, 0x04, b"\x01"))
+
+
+async def test_segmented_report_default_response_and_other_frames(meter):
+    """Test the default response the meter asks for, and frames that need nothing."""
+    segmented = meter.endpoints[1].zosung_irtransmit
+    command = segmented.ServerCommandDefs.receive_ir_frame_02
+    # frame control 0x01: cluster command that asks for a default response
+    data = (
+        bytes([0x01, 0x42, command.id])
+        + command.schema(seq=7, position=0, maxlen=0x38).serialize()
+    )
+
+    with mock.patch.object(segmented, "send_default_rsp") as send_default_rsp:
+        segmented.handle_message(*segmented.deserialize(data))
+    await wait_for_zigpy_tasks()
+
+    send_default_rsp.assert_called_once()
+    assert sent_frames(meter) == []
+    assert not segmented.reports
