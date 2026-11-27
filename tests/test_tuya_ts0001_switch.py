@@ -3,14 +3,13 @@
 from unittest import mock
 
 import pytest
-from zha.quirks import DEVICE_REGISTRY, TUYA_PLUG_ONOFF
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.greenpower import GreenPowerProxy
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.builder.metadata import ExposesFeatureMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya import (
     TUYA_CLUSTER_E000_ID,
@@ -18,7 +17,7 @@ from zhaquirks.tuya import (
     BaseEnchantedDevice,
     TuyaZBOnOffAttributeCluster,
 )
-import zhaquirks.tuya.ts0001_switch
+import zhaquirks.tuya.tuya_wall_switch
 
 zhaquirks.setup()
 
@@ -68,14 +67,17 @@ EP1_CLUSTERS = {
 async def test_ts0001_switch_tuya_plug_parity(
     zigpy_device_from_v2_quirk, manufacturer, cluster_ids
 ):
-    """Test the v2 quirk matches every layout and has the Tuya plug features + spell."""
+    """Test the v2 quirk matches every layout and has the child lock + spell."""
     device = zigpy_device_from_v2_quirk(manufacturer, "TS0001", cluster_ids=cluster_ids)
 
     entry = DEVICE_REGISTRY.match_entry(device)
     assert entry is not None
-    assert entry.source.file.endswith("ts0001_switch.py")
-    assert ExposesFeatureMetadata(feature=TUYA_PLUG_ONOFF) in (
-        entry.zha_device_factory.quirk_definition.exposes_features
+    assert entry.source.file.endswith("tuya_wall_switch.py")
+    # keeps the unique_id of ZHA's TuyaChildLockSwitch these devices had before
+    assert any(
+        getattr(m, "attribute_name", None) == "child_lock"
+        and m.unique_id_suffix == "6-child_lock"
+        for m in entry.zha_device_factory.quirk_definition.entity_metadata
     )
 
     assert isinstance(device.endpoints[1].on_off, TuyaZBOnOffAttributeCluster)
