@@ -74,35 +74,55 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
     .applies_to(manufacturer="ubisys", model="S2-R (5602)")
     .replaces(UbisysCluster, endpoint_id=232)
     .adds(UbisysS2InputConfigCluster)
+    # Relays are on endpoints 1 and 2, the inputs that control them by default on
+    # endpoints 3 and 4, so each channel's child device takes its relay's endpoint and
+    # its input's endpoint. The input settings are all on endpoint 1 and are assigned
+    # to their channel. The meter on endpoint 5 measures the whole device and stays on
+    # the main device. The child device names the channel, so the entity names don't
+    # number it.
+    .child_device(
+        "1",
+        endpoint_ids=[1, 3],
+        translation_key="channel",
+        translation_placeholders={"index": "1"},
+        fallback_name="Channel 1",
+    )
+    .child_device(
+        "2",
+        endpoint_ids=[2, 4],
+        translation_key="channel",
+        translation_placeholders={"index": "2"},
+        fallback_name="Channel 2",
+    )
     .enum(
         attribute_name=UbisysS2InputConfigCluster.AttributeDefs.input_mode_1.name,
         enum_class=InputMode,
         cluster_id=UbisysS2InputConfigCluster.cluster_id,
-        translation_key="input_mode_id",
-        fallback_name="Input mode 1",
-        translation_placeholders={"input_id": "1"},
+        child_device_id="1",
+        translation_key="input_mode",
+        fallback_name="Input mode",
     )
     .switch(
         attribute_name=UbisysS2InputConfigCluster.AttributeDefs.detached_1.name,
         cluster_id=UbisysS2InputConfigCluster.cluster_id,
-        translation_key="detached_id",
-        fallback_name="Detached mode 1",
-        translation_placeholders={"input_id": "1"},
+        child_device_id="1",
+        translation_key="detached",
+        fallback_name="Detached mode",
     )
     .enum(
         attribute_name=UbisysS2InputConfigCluster.AttributeDefs.input_mode_2.name,
         enum_class=InputMode,
         cluster_id=UbisysS2InputConfigCluster.cluster_id,
-        translation_key="input_mode_id",
-        fallback_name="Input mode 2",
-        translation_placeholders={"input_id": "2"},
+        child_device_id="2",
+        translation_key="input_mode",
+        fallback_name="Input mode",
     )
     .switch(
         attribute_name=UbisysS2InputConfigCluster.AttributeDefs.detached_2.name,
         cluster_id=UbisysS2InputConfigCluster.cluster_id,
-        translation_key="detached_id",
-        fallback_name="Detached mode 2",
-        translation_placeholders={"input_id": "2"},
+        child_device_id="2",
+        translation_key="detached",
+        fallback_name="Detached mode",
     )
     .replaces(UbisysElectricalMeasurement, endpoint_id=5)
     # The device exposes total active power on multiple attributes,
@@ -179,9 +199,8 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
         cluster_type=ClusterType.Client,
         endpoint_id=3,
         unique_id_suffix="button_1",
-        translation_key="button_numbered",
-        fallback_name="Button 1",
-        translation_placeholders={"number": "1"},
+        translation_key="button",
+        fallback_name="Button",
     )
     .button_event(
         events=[
@@ -194,9 +213,8 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
         cluster_type=ClusterType.Client,
         endpoint_id=4,
         unique_id_suffix="button_2",
-        translation_key="button_numbered",
-        fallback_name="Button 2",
-        translation_placeholders={"number": "2"},
+        translation_key="button",
+        fallback_name="Button",
     )
     .add_to_registry()
 )
