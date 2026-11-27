@@ -1,8 +1,13 @@
 """Tests for Tuya quirks."""
 
+import asyncio
+import contextlib
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 
+from tests.common import wait_for_zigpy_tasks
 import zhaquirks
 import zhaquirks.tuya
 
@@ -88,3 +93,120 @@ async def test_ts0601_power_converter(zigpy_device_from_v2_quirk, msg, expected_
     assert status == foundation.Status.SUCCESS
 
     assert tuya_manufacturer.get("power") == expected_power
+
+
+async def test_zm6lt1_phase_dp_converter(zigpy_device_from_v2_quirk):
+    """Test the packed DP 6 phase converter of the Moes ZM6LT1."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    ep = quirked.endpoints[1]
+
+    # real device capture: 234.9 V, 0.173 A, 16 W, 37 var, 40 VA, PF 39 %
+    msg = (
+        b"\x09\x18\x02\x00\x78\x06\x00\x00\x12"
+        b"\x02\x0f\x09\x2d\x00\x00\xad\x00\x00\x10\x00\x00\x25\x00\x00\x28\x27\x00"
+    )
+
+    tuya_manufacturer = ep.tuya_manufacturer
+    hdr, data = tuya_manufacturer.deserialize(msg)
+    status = tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    electrical_meas_cluster = ep.electrical_measurement
+    assert electrical_meas_cluster.get("rms_voltage") == 2349
+    assert electrical_meas_cluster.get("rms_current") == 173
+    assert electrical_meas_cluster.get("active_power") == 16
+    assert electrical_meas_cluster.get("reactive_power") == 37
+    assert electrical_meas_cluster.get("apparent_power") == 40
+    assert electrical_meas_cluster.get("power_factor") == 39
+
+
+async def test_zm6lt1_poll_loop(zigpy_device_from_v2_quirk):
+    """Test the ZM6LT1 periodic data-query poll loop."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+
+    # instantiating the cluster inside a running loop starts the poller
+    assert cluster._poll_task is not None
+    cluster._poll_task.cancel()
+
+    calls = []
+
+    async def fake_command(command_id, expect_reply=True):
+        calls.append(command_id)
+        if len(calls) == 1:
+            # first poll fails (e.g. radio not ready), the loop must retry
+            raise RuntimeError("ApplicationController is not running")
+        raise asyncio.CancelledError
+
+    with (
+        mock.patch.object(type(cluster), "POLL_INTERVAL", 0),
+        mock.patch.object(cluster, "command", fake_command),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await cluster._poll_loop()
+
+    assert calls == [zhaquirks.tuya.TUYA_QUERY_DATA] * 2
+
+
+async def test_zm6lt1_poller_cancelled_on_device_remove(zigpy_device_from_v2_quirk):
+    """Test that the poller is cancelled when zigpy tears the device down."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    task = quirked.endpoints[1].tuya_manufacturer._poll_task
+    assert task is not None
+
+    # called on device removal, re-interview and controller shutdown
+    quirked.on_remove()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+    assert task.cancelled()
+
+
+async def test_zm6lt1_poller_stops_when_superseded(zigpy_device_from_v2_quirk):
+    """Test that a poller stops once its cluster is replaced on the endpoint."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    ep = quirked.endpoints[1]
+    old_cluster = ep.tuya_manufacturer
+    old_cluster._poll_task.cancel()
+
+    new_cluster = type(old_cluster)(ep)
+    ep.in_clusters[new_cluster.cluster_id] = new_cluster
+    new_cluster._poll_task.cancel()
+
+    with (
+        mock.patch.object(type(old_cluster), "POLL_INTERVAL", 0),
+        mock.patch.object(old_cluster, "command") as command,
+    ):
+        await old_cluster._poll_loop()  # returns instead of looping forever
+
+    command.assert_not_called()
+
+
+def test_zm6lt1_no_poller_without_event_loop(zigpy_device_from_v2_quirk):
+    """Test that no poller is started when there is no running event loop."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+    assert cluster._poll_task is None
+
+
+async def test_zm6lt1_reset_energy(zigpy_device_from_v2_quirk):
+    """Test the reset energy button writes DP 20 = true."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+    cluster._poll_task.cancel()
+
+    with mock.patch.object(
+        cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        (status,) = await cluster.write_attributes({"reset_energy": True})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    assert request.call_args.kwargs["command_id"] == zhaquirks.tuya.TUYA_SET_DATA
+    # DP 20, type bool, length 1, value 1
+    assert request.call_args.kwargs["data"].endswith(b"\x14\x01\x00\x01\x01")
