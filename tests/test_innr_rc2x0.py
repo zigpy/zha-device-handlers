@@ -153,7 +153,7 @@ async def test_rc250_remote_mode():
     """
     async with zha_gateway() as gateway:
         zha_device = await join_device_from_diagnostics(
-            gateway, "innr-rc-250-scan.json", DEVICE_REGISTRY
+            gateway, "innr-rc-250-0x21086500.json", DEVICE_REGISTRY
         )
         device = zha_device.device
         cluster = device.endpoints[1].in_clusters[CLUSTER]
