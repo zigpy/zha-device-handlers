@@ -167,3 +167,33 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+(
+    TuyaQuirkBuilder("_TZE284_gyzlwu5q", "TS0601")
+    .tuya_smoke(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=9,
+        attribute_name="self_test_result",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.DIAGNOSTIC,
+        fallback_name="Self test result",
+    )
+    .tuya_dp(
+        dp_id=14,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
+    )
+    .tuya_temperature(dp_id=23, scale=10)
+    .tuya_humidity(dp_id=24)
+    .skip_configuration()
+    .add_to_registry()
+)
