@@ -3,13 +3,24 @@
 from unittest import mock
 
 import pytest
+import zigpy.profiles.zha
 import zigpy.types as t
-from zigpy.zcl import AttributeUnsupportedEvent
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
+from zigpy.zcl.clusters.general import (
+    Basic,
+    BinaryInput,
+    Identify,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+    Scenes,
+)
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
+from tests.common import ButtonEventRecorder
 import zhaquirks
-from zhaquirks.legrand import LEGRAND
+from zhaquirks.const import BUTTON_1, BUTTON_2, SHORT_PRESS, BatterySize
+from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 zhaquirks.setup()
 
@@ -141,3 +152,99 @@ async def test_legrand_identify_command(zigpy_device_from_v2_quirk):
         assert request.call_args_list[1].kwargs["identify_time"] == IDENTIFY_TIME
         assert "effect_id" not in request.call_args_list[1].kwargs
         assert "effect_variant" not in request.call_args_list[1].kwargs
+
+
+MASTER_REMOTE_CLUSTERS = {
+    1: {
+        Basic.cluster_id: ClusterType.Server,
+        PowerConfiguration.cluster_id: ClusterType.Server,
+        Identify.cluster_id: ClusterType.Server,
+        BinaryInput.cluster_id: ClusterType.Server,
+        PollControl.cluster_id: ClusterType.Server,
+        MANUFACTURER_SPECIFIC_CLUSTER_ID: ClusterType.Server,
+        Scenes.cluster_id: ClusterType.Client,
+        Ota.cluster_id: ClusterType.Client,
+    }
+}
+
+
+def master_remote(zigpy_device_from_v2_quirk):
+    """Return a quirked Legrand / BTicino wireless master remote."""
+    device = zigpy_device_from_v2_quirk(
+        f" {LEGRAND}",
+        " Master remote SW Home / Away",
+        cluster_ids=MASTER_REMOTE_CLUSTERS,
+    )
+    # The endpoint the remote reports, so ZHA discovers its cluster entities
+    endpoint = device.endpoints[1]
+    endpoint.profile_id = zigpy.profiles.zha.PROFILE_ID
+    endpoint.device_type = zigpy.profiles.zha.DeviceType.REMOTE_CONTROL
+    return device
+
+
+def send_scenes_frame(device, data: bytes) -> None:
+    """Receive a Scenes cluster frame from endpoint 1 of the remote."""
+    device.packet_received(
+        t.ZigbeePacket(
+            src=t.AddrModeAddress(addr_mode=t.AddrMode.NWK, address=device.nwk),
+            src_ep=1,
+            dst=t.AddrModeAddress(addr_mode=t.AddrMode.NWK, address=0x0000),
+            dst_ep=1,
+            tsn=data[1],
+            profile_id=zigpy.profiles.zha.PROFILE_ID,
+            cluster_id=Scenes.cluster_id,
+            data=t.SerializableBytes(data),
+        )
+    )
+
+
+async def test_master_remote_battery(zigpy_device_from_v2_quirk):
+    """Test the master remote battery: Legrand voltage conversion and a CR2032."""
+    device = master_remote(zigpy_device_from_v2_quirk)
+    power_cluster = device.endpoints[1].power
+
+    assert power_cluster.get("battery_size") == BatterySize.CR2032
+    assert power_cluster.get("battery_quantity") == 1
+
+    power_cluster.update_attribute(
+        PowerConfiguration.AttributeDefs.battery_voltage.id, 29
+    )
+    assert power_cluster["battery_percentage_remaining"] == 160
+
+
+async def test_master_remote_triggers(zigpy_device_from_v2_quirk):
+    """Test the master remote buttons map to the scene each one recalls."""
+    device = master_remote(zigpy_device_from_v2_quirk)
+    triggers = device.device_automation_triggers
+
+    assert triggers[(SHORT_PRESS, BUTTON_1)]["params"] == {"group_id": 0xFFF7}
+    assert triggers[(SHORT_PRESS, BUTTON_2)]["params"] == {"group_id": 0xFFF6}
+
+
+async def test_master_remote_button_events(zigpy_device_from_v2_quirk):
+    """Test the master remote button event entities fire for real recall frames."""
+    device = master_remote(zigpy_device_from_v2_quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_1": ["press_start"],
+        "button_2": ["press_start"],
+    }
+
+    # The binary input has no use on this remote, so it gets no entity
+    entity_clusters = {
+        getattr(entity, "_cluster", None) and entity._cluster.cluster_id
+        for entity in recorder.zha_device.platform_entities.values()
+    }
+    assert BinaryInput.cluster_id not in entity_clusters
+    assert PowerConfiguration.cluster_id in entity_clusters
+
+    # recall(group_id=0xFFF7, scene_id=1, transition_time=0), as sent by the remote
+    send_scenes_frame(device, b"\x11\x06\x05\xf7\xff\x01\x00\x00")
+    # recall(group_id=0xFFF6, scene_id=1, transition_time=0)
+    send_scenes_frame(device, b"\x11\x07\x05\xf6\xff\x01\x00\x00")
+
+    assert recorder.pop() == [
+        ("button_1", "press_start"),
+        ("button_2", "press_start"),
+    ]
