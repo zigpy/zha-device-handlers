@@ -152,15 +152,25 @@ class ThermostatCluster(CustomCluster, Thermostat):
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
             _LOGGER.debug("current host_flags: %s", host_flags)
 
-            if attributes.get("system_mode") == 0x0:
-                return await super().write_attributes(
-                    {"host_flags": host_flags | SET_OFF_MODE_FLAG},
-                    manufacturer=MANUFACTURER,
-                )
-            if attributes.get("system_mode") == 0x4:
-                return await super().write_attributes(
-                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG},
-                    manufacturer=MANUFACTURER,
-                )
+            system_mode = attributes["system_mode"]
+
+            # Only one of the two off-mode flags may be written
+            if system_mode == Thermostat.SystemMode.Off:
+                host_flags = (host_flags & ~CLR_OFF_MODE_FLAG) | SET_OFF_MODE_FLAG
+            elif system_mode == Thermostat.SystemMode.Heat:
+                host_flags = (host_flags & ~SET_OFF_MODE_FLAG) | CLR_OFF_MODE_FLAG
+            else:
+                return await super().write_attributes(attributes, **kwargs)
+
+            result = await super().write_attributes(
+                {"host_flags": host_flags}, manufacturer=MANUFACTURER
+            )
+
+            # The valve reports off mode with the flag that clears it when written, so
+            # the system mode can't be derived from the written flags: set it here.
+            if all(record.status == foundation.Status.SUCCESS for record in result[0]):
+                self._update_attribute(SYSTEM_MODE_ATTR, system_mode)
+
+            return result
 
         return await super().write_attributes(attributes, **kwargs)
