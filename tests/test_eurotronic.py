@@ -88,3 +88,19 @@ async def test_system_mode_failed_write_keeps_state(zigpy_device_from_quirk):
         await cluster.write_attributes({"system_mode": Thermostat.SystemMode.Off})
 
     assert cluster.get("system_mode") == Thermostat.SystemMode.Heat
+
+
+async def test_system_mode_write_other_modes_pass_through(zigpy_device_from_quirk):
+    """System modes other than Off and Heat are written as they are."""
+    device = zigpy_device_from_quirk(SPZB0001)
+    cluster = device.endpoints[1].thermostat
+    cluster._update_attribute(HOST_FLAGS_ATTR, 0x01)
+
+    written = []
+    with _mock_write(cluster, written):
+        await cluster.write_attributes({"system_mode": Thermostat.SystemMode.Cool})
+
+    assert written == [
+        {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Cool}
+    ]
+    assert cluster.get(HOST_FLAGS_ATTR) == 0x01
