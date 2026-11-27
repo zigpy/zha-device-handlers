@@ -3,6 +3,7 @@
 from typing import Any, Final
 
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import (
     AttributeReadEvent,
     AttributeReportedEvent,
@@ -148,7 +149,7 @@ class SonoffInputConfigCluster(LocalDataCluster):
 
 
 def _button_event(
-    builder: QuirkBuilder, endpoint_id: int, button: str, *, numbered: bool = True
+    builder: QuirkBuilder, gang: int, button: str, *, multi_gang: bool
 ) -> QuirkBuilder:
     """Add the button event entity of a gang's button and return the builder.
 
@@ -156,21 +157,6 @@ def _button_event(
     Whether the toggle is sent when the button goes down or when it is released is not
     confirmed on hardware, so it is a `single_press`, which holds either way.
     """
-    naming: dict[str, Any]
-    if numbered:
-        naming = {
-            "unique_id_suffix": f"button_{endpoint_id}",
-            "translation_key": "button_numbered",
-            "fallback_name": f"Button {endpoint_id}",
-            "translation_placeholders": {"number": str(endpoint_id)},
-        }
-    else:
-        naming = {
-            "unique_id_suffix": "button",
-            "translation_key": "button",
-            "fallback_name": "Button",
-        }
-
     return builder.button_event(
         events=[
             ButtonEvent(
@@ -180,98 +166,100 @@ def _button_event(
         ],
         cluster_id=OnOff.cluster_id,
         cluster_type=ClusterType.Client,
-        endpoint_id=endpoint_id,
-        **naming,
+        endpoint_id=gang,
+        unique_id_suffix=f"button_{gang}" if multi_gang else "button",
+        translation_key="button",
+        fallback_name="Button",
     )
 
 
-# Base quirk for 1-channel device
-zbm_1c_quirk = (
-    QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
-    .applies_to("SONOFF", "ZBM5-1C-120")
-    .replaces(SonoffCluster)
-    .adds(SonoffInputConfigCluster)
-    .adds(OnOff, cluster_type=ClusterType.Client)
-    .removes_entity(
-        EntityFilter(
-            endpoint_id=1,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+_DETACH_RELAY_ATTRIBUTES: Final = (
+    SonoffInputConfigCluster.AttributeDefs.relay_1_detached,
+    SonoffInputConfigCluster.AttributeDefs.relay_2_detached,
+    SonoffInputConfigCluster.AttributeDefs.relay_3_detached,
+)
+_BUTTONS: Final = (BUTTON_1, BUTTON_2, BUTTON_3)
+
+
+def _add_gangs(builder: QuirkBuilder, gangs: int) -> QuirkBuilder:
+    """Add the clusters and entities of the device and each of its gangs.
+
+    Each gang of a multi-gang model is a child device, with the id and name ZHA's
+    automatic split gives it (these models are on ZHA's allowlist). A child device
+    defined in a quirk takes every entity on its endpoint, so the work mode of the
+    whole device is kept on the main device, and the detach relay switches, which are
+    all on endpoint 1, are assigned to the child device of their relay. The child
+    device names the gang, so the entity names don't number it.
+    """
+    multi_gang = gangs > 1
+    builder = (
+        builder.replaces(SonoffCluster)
+        .adds(SonoffInputConfigCluster)
+        .enum(
+            SonoffCluster.AttributeDefs.work_mode.name,
+            SonoffWorkMode,
+            SonoffCluster.cluster_id,
+            entity_type=EntityType.DIAGNOSTIC,
+            entity_platform=EntityPlatform.SENSOR,
+            child_device_id=None if multi_gang else UNDEFINED,
+            translation_key="work_mode",
+            fallback_name="Work mode",
         )
     )
-    .enum(
-        SonoffCluster.AttributeDefs.work_mode.name,
-        SonoffWorkMode,
-        SonoffCluster.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        entity_platform=EntityPlatform.SENSOR,
-        translation_key="work_mode",
-        fallback_name="Work mode",
-    )
-    .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
-        SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_id",
-        fallback_name="Detach relay 1",
-        translation_placeholders={"id": "1"},
-    )
-    .device_automation_triggers(
-        {(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1}}
-    )
-)
-# The only button of the 1-gang switch is not numbered, the multi-gang ones are
-_button_event(
-    zbm_1c_quirk.clone(omit_man_model_data=False), 1, BUTTON_1, numbered=False
+
+    for gang in range(1, gangs + 1):
+        if multi_gang:
+            builder = builder.child_device(
+                str(gang),
+                endpoint_id=gang,
+                translation_key="channel",
+                translation_placeholders={"index": str(gang)},
+                fallback_name=f"Channel {gang}",
+            )
+
+        builder = (
+            builder.adds(OnOff, endpoint_id=gang, cluster_type=ClusterType.Client)
+            .removes_entity(
+                EntityFilter(
+                    endpoint_id=gang,
+                    cluster_id=OnOff.cluster_id,
+                    device_class=BinarySensorDeviceClass.OPENING,
+                )
+            )
+            .switch(
+                _DETACH_RELAY_ATTRIBUTES[gang - 1].name,
+                SonoffInputConfigCluster.cluster_id,
+                child_device_id=str(gang) if multi_gang else UNDEFINED,
+                translation_key="detach_relay",
+                fallback_name="Detach relay",
+            )
+            .device_automation_triggers(
+                {
+                    (SHORT_PRESS, _BUTTONS[gang - 1]): {
+                        COMMAND: COMMAND_TOGGLE,
+                        ENDPOINT_ID: gang,
+                    }
+                }
+            )
+        )
+        builder = _button_event(
+            builder, gang, _BUTTONS[gang - 1], multi_gang=multi_gang
+        )
+
+    return builder
+
+
+_add_gangs(
+    QuirkBuilder("SONOFF", "ZBM5-1C-80/86").applies_to("SONOFF", "ZBM5-1C-120"),
+    gangs=1,
 ).add_to_registry()
 
-zbm_2c_quirk = (
-    _button_event(zbm_1c_quirk.clone(), 1, BUTTON_1)
-    .applies_to("SONOFF", "ZBM5-2C-80/86")
-    .applies_to("SONOFF", "ZBM5-2C-120")
-    .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
-    .removes_entity(
-        EntityFilter(
-            endpoint_id=2,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
-    )
-    .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
-        SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_id",
-        fallback_name="Detach relay 2",
-        translation_placeholders={"id": "2"},
-    )
-    .device_automation_triggers(
-        {(SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 2}}
-    )
-)
-_button_event(zbm_2c_quirk, 2, BUTTON_2)
-zbm_2c_quirk.add_to_registry()
+_add_gangs(
+    QuirkBuilder("SONOFF", "ZBM5-2C-80/86").applies_to("SONOFF", "ZBM5-2C-120"),
+    gangs=2,
+).add_to_registry()
 
-zbm_3c_quirk = (
-    zbm_2c_quirk.clone()
-    .applies_to("SONOFF", "ZBM5-3C-80/86")
-    .applies_to("SONOFF", "ZBM5-3C-120")
-    .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
-    .removes_entity(
-        EntityFilter(
-            endpoint_id=3,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
-    )
-    .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
-        SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_id",
-        fallback_name="Detach relay 3",
-        translation_placeholders={"id": "3"},
-    )
-    .device_automation_triggers(
-        {(SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 3}}
-    )
-)
-_button_event(zbm_3c_quirk, 3, BUTTON_3)
-zbm_3c_quirk.add_to_registry()
+_add_gangs(
+    QuirkBuilder("SONOFF", "ZBM5-3C-80/86").applies_to("SONOFF", "ZBM5-3C-120"),
+    gangs=3,
+).add_to_registry()
