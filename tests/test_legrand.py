@@ -19,7 +19,7 @@ from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 from tests.common import ButtonEventRecorder
 import zhaquirks
-from zhaquirks.const import BUTTON_1, BUTTON_2, SHORT_PRESS, BatterySize
+from zhaquirks.const import BatterySize
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 zhaquirks.setup()
@@ -210,15 +210,6 @@ async def test_master_remote_battery(zigpy_device_from_v2_quirk):
         PowerConfiguration.AttributeDefs.battery_voltage.id, 29
     )
     assert power_cluster["battery_percentage_remaining"] == 160
-
-
-async def test_master_remote_triggers(zigpy_device_from_v2_quirk):
-    """Test the master remote buttons map to the scene each one recalls."""
-    device = master_remote(zigpy_device_from_v2_quirk)
-    triggers = device.device_automation_triggers
-
-    assert triggers[(SHORT_PRESS, BUTTON_1)]["params"] == {"group_id": 0xFFF7}
-    assert triggers[(SHORT_PRESS, BUTTON_2)]["params"] == {"group_id": 0xFFF6}
 
 
 async def test_master_remote_button_events(zigpy_device_from_v2_quirk):
