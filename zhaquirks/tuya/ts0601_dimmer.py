@@ -35,6 +35,23 @@ class TuyaInWallLevelControlNM(NoManufacturerCluster, TuyaInWallLevelControl):
     """Tuya Level cluster for inwall dimmable device with NoManufacturerID."""
 
 
+def _add_channels(builder: QuirkBuilder, gangs: int) -> QuirkBuilder:
+    """Expose the endpoint of each gang as a child device.
+
+    The ids and names are those of ZHA's automatic split for the multi-gang models
+    on its allowlist, which can't match `TS0601` by model.
+    """
+    for endpoint_id in range(1, gangs + 1):
+        builder = builder.child_device(
+            str(endpoint_id),
+            endpoint_id=endpoint_id,
+            translation_key="channel",
+            translation_placeholders={"index": str(endpoint_id)},
+            fallback_name=f"Channel {endpoint_id}",
+        )
+    return builder
+
+
 # --- DEVICE SUMMARY ---
 # TuyaSingleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 # - Dimmer with Green Power Proxy: Endpoint=242 profile=41440 device_type=0x0061, output_clusters: 0x0021 -
@@ -243,7 +260,7 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
 
 # Two-gang dimmers: each gang has its own endpoint, with Tuya MCU OnOff and
 # LevelControl clusters fed by the DPs of TuyaLevelControlManufCluster.
-(
+_add_channels(
     QuirkBuilder("_TZE200_e3oitdyu", "TS0601")
     .applies_to("_TZE204_bxoo2swd", "TS0601")
     .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
@@ -252,13 +269,13 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
     .adds(TuyaInWallLevelControl)
     .adds(TuyaOnOff, endpoint_id=2)
     .adds(TuyaInWallLevelControl, endpoint_id=2)
-    .replaces(TuyaLevelControlManufCluster)
-    .add_to_registry()
-)
+    .replaces(TuyaLevelControlManufCluster),
+    gangs=2,
+).add_to_registry()
 
 
 # Two-gang dimmers with a Green Power proxy endpoint.
-(
+_add_channels(
     QuirkBuilder("_TZE200_fjjbhx9d", "TS0601")
     .applies_to("_TZE200_gwkapsoq", "TS0601")  # Loratap
     .applies_to("_TZE204_zenj4lxv", "TS0601")
@@ -270,13 +287,13 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
     .adds(TuyaInWallLevelControlNM)
     .adds(TuyaOnOffNM, endpoint_id=2)
     .adds(TuyaInWallLevelControlNM, endpoint_id=2)
-    .replaces(TuyaLevelControlManufCluster)
-    .add_to_registry()
-)
+    .replaces(TuyaLevelControlManufCluster),
+    gangs=2,
+).add_to_registry()
 
 
 # Three-gang dimmers with a Green Power proxy endpoint.
-(
+_add_channels(
     QuirkBuilder("_TZE200_vm1gyrso", "TS0601")
     .applies_to("_TZE204_1v1dxkck", "TS0601")
     .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
@@ -288,6 +305,6 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
     .adds(TuyaInWallLevelControlNM, endpoint_id=2)
     .adds(TuyaOnOffNM, endpoint_id=3)
     .adds(TuyaInWallLevelControlNM, endpoint_id=3)
-    .replaces(TuyaLevelControlManufCluster)
-    .add_to_registry()
-)
+    .replaces(TuyaLevelControlManufCluster),
+    gangs=3,
+).add_to_registry()
