@@ -14,7 +14,7 @@ from zhaquirks.builder import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaPowerConfigurationCluster2AA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
@@ -112,6 +112,14 @@ class TuyaPresetMode(t.enum8):
     Auto = 0x01
     Off = 0x02
     Heat = 0x03
+
+
+class TuyaThermostatSystemModeV03(t.enum8):
+    """Tuya thermostat preset used as system mode: auto, manual and holiday."""
+
+    Auto = 0x00
+    Manual = 0x01
+    Holiday = 0x02
 
 
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
@@ -954,6 +962,155 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         attribute_name="scale_protection",
         translation_key="scale_protection",
         fallback_name="Scale protection",
+    )
+    .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Moes SH4 family; datapoints from zigbee-herdsman-converters, verified on _TZE200_wnvhlcgl
+(
+    TuyaQuirkBuilder("_TZE200_wnvhlcgl", "TS0601")
+    .applies_to("_TZE284_tbgecldg", "TS0601")
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            TuyaThermostatSystemModeV03.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemModeV03.Manual: Thermostat.SystemMode.Heat,
+            TuyaThermostatSystemModeV03.Holiday: Thermostat.SystemMode.Heat,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemModeV03.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemModeV03.Manual,
+        }[x],
+    )
+    # The device reports the setpoint on both dp 16 and dp 105: changes made with the
+    # wheel only arrive on dp 105, so both are mapped (writes go to both).
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 50,
+        dp_converter=lambda x: x // 50,
+    )
+    .tuya_dp(
+        dp_id=105,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 50,
+        dp_converter=lambda x: x // 50,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_switch(
+        dp_id=30,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    # dp 34 reports 50-150 (see zigbee-herdsman-converters batteryVoltToPercent)
+    .tuya_dp(
+        dp_id=34,
+        ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: max(0, min(100, x - 50)) * 2,
+    )
+    .adds(TuyaPowerConfigurationCluster2AA)
+    .tuya_sensor(
+        dp_id=45,
+        attribute_name="fault_code",
+        type=t.uint32_t,
+        translation_key="fault_code",
+        fallback_name="Fault code",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="comfort_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.5,
+        multiplier=0.5,
+        translation_key="comfort_temperature",
+        fallback_name="Comfort temperature",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="eco_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.5,
+        multiplier=0.5,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    # 103 holiday start/stop, skipped
+    .tuya_number(
+        dp_id=104,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_switch(
+        dp_id=106,
+        attribute_name="boost_heating",
+        translation_key="boost_heating",
+        fallback_name="Boost heating",
+    )
+    .tuya_switch(
+        dp_id=107,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    # 109-115 are schedule DPs, skipped
+    .tuya_number(
+        dp_id=116,
+        attribute_name="open_window_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=25,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.5,
+        multiplier=0.5,
+        translation_key="open_window_temperature",
+        fallback_name="Open window temperature",
+    )
+    .tuya_number(
+        dp_id=117,
+        attribute_name="open_window_time",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=60,
+        unit=UnitOfTime.MINUTES,
+        step=1,
+        translation_key="open_window_time",
+        fallback_name="Open window time",
+    )
+    .tuya_sensor(
+        dp_id=118,
+        attribute_name="boost_time_remaining",
+        type=t.uint32_t,
+        unit=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="boost_time_remaining",
+        fallback_name="Boost time remaining",
     )
     .adds(TuyaThermostatV2)
     .skip_configuration()

@@ -378,3 +378,55 @@ def test_handle_get_data_invalid_datapoint(zigpy_device_from_v2_quirk):
         (Thermostat.AttributeDefs.occupied_heating_setpoint.id, 2100),
         (Thermostat.AttributeDefs.local_temperature.id, 2050),
     ]
+
+
+# Real frames from a _TZE200_wnvhlcgl (Moes SH4 family) valve
+SH4_REPORTS = (
+    # dp 24, local temperature 24.3 C
+    (b"\t\x14\x02\x00\x14\x18\x02\x00\x04\x00\x00\x00\xf3", "thermostat", 0x0000, 2430),
+    # dp 105, setpoint 16.5 C (sent when turning the wheel)
+    (b"\t\x15\x02\x00\x15\x69\x02\x00\x04\x00\x00\x00\x21", "thermostat", 0x0012, 1650),
+    # dp 16, setpoint 17 C
+    (b"\t\x16\x02\x00\x16\x10\x02\x00\x04\x00\x00\x00\x22", "thermostat", 0x0012, 1700),
+    # dp 2, preset manual -> heat
+    (b"\t\x17\x02\x00\x17\x02\x04\x00\x01\x01", "thermostat", 0x001C, 4),
+    # dp 2, preset auto -> auto
+    (b"\t\x18\x02\x00\x18\x02\x04\x00\x01\x00", "thermostat", 0x001C, 1),
+    # dp 34, battery raw 94 -> 44 % (88 in half percent)
+    (b"\t\x19\x02\x00\x19\x22\x02\x00\x04\x00\x00\x00\x5e", "power", 0x0021, 88),
+)
+
+
+async def test_sh4_valve(zigpy_device_from_v2_quirk):
+    """Test reports and setpoint writes for the Moes SH4 family."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_wnvhlcgl", "TS0601")
+    ep = quirked.endpoints[1]
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    for msg, cluster_name, attr_id, value in SH4_REPORTS:
+        cluster = getattr(ep, cluster_name)
+        listener = ClusterListener(cluster)
+        hdr, data = ep.tuya_manufacturer.deserialize(msg)
+        status = ep.tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+        assert listener.attribute_updates[-1] == (attr_id, value)
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {"occupied_heating_setpoint": 1700}
+        )
+        await wait_for_zigpy_tasks()
+        # 17 C is sent as 34 on both setpoint datapoints, dp 16 and dp 105
+        assert [call.kwargs["data"] for call in m1.call_args_list] == [
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x22",
+            b"\x01\x02\x00\x00\x02\x69\x02\x00\x04\x00\x00\x00\x22",
+        ]
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
