@@ -1,0 +1,51 @@
+"""Tests for Adeo quirks."""
+
+import pytest
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl.clusters.general import KeepAlive, Ota
+
+import zhaquirks
+
+zhaquirks.setup()
+
+ZBEK_MODELS = [
+    f"ZBEK-{number}" for number in (*range(1, 15), 27, 28, 29, 30, 32, 33, 37)
+]
+
+
+@pytest.mark.parametrize("model", ZBEK_MODELS)
+@pytest.mark.parametrize("advertises_keepalive", [False, True])
+async def test_zbek_keepalive(zigpy_device_mock, model, advertises_keepalive):
+    """Expose KeepAlive as a client whether or not the bulb advertises it."""
+    raw_device = zigpy_device_mock()
+    raw_device.manufacturer = "Adeo"
+    raw_device.model = model
+    raw_endpoint = raw_device.add_endpoint(1)
+    raw_endpoint.add_output_cluster(Ota.cluster_id)
+    keepalive_base = KeepAlive.AttributeDefs.tc_keep_alive_base.id
+    if advertises_keepalive:
+        raw_endpoint.add_output_cluster(KeepAlive.cluster_id).update_attribute(
+            keepalive_base, 10
+        )
+
+    device = DEVICE_REGISTRY.resolve(raw_device)
+    assert (device is raw_device) == advertises_keepalive
+    endpoint = device.endpoints[1]
+
+    assert set(endpoint.out_clusters) == {Ota.cluster_id, KeepAlive.cluster_id}
+    keepalive = endpoint.out_clusters[KeepAlive.cluster_id]
+    assert isinstance(keepalive, KeepAlive)
+    assert keepalive.is_client
+    assert KeepAlive.cluster_id not in endpoint.in_clusters
+    if advertises_keepalive:
+        assert keepalive.get(keepalive_base) == 10
+
+
+@pytest.mark.parametrize("model", ZBEK_MODELS)
+async def test_zbek_without_endpoint_one(zigpy_device_mock, model):
+    """Leave a device without endpoint 1 untouched."""
+    device = zigpy_device_mock()
+    device.manufacturer = "Adeo"
+    device.model = model
+
+    assert DEVICE_REGISTRY.resolve(device) is device
