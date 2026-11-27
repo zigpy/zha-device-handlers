@@ -300,10 +300,10 @@ class TouchlinkModeColor(TouchlinkModeCluster, Color):
 
 
 def _triggers(
-    subtype: str, key: KeyId, *, double_press: bool = False
+    subtype: str, key: int, *, double_press: bool = False
 ) -> dict[tuple[str, str], dict[str, Any]]:
     """Return the device automation triggers of a key."""
-    events = {
+    events: dict[str, int] = {
         SHORT_PRESS: KeyEvent.short_release,
         LONG_PRESS: KeyEvent.long_press,
         LONG_RELEASE: KeyEvent.long_release,
@@ -313,7 +313,7 @@ def _triggers(
 
     return {
         (trigger_type, subtype): {
-            COMMAND: f"{key.name}_{event.name}",
+            COMMAND: f"{KeyId(key).name}_{KeyEvent(event).name}",
             CLUSTER_ID: InnrDeviceConfigurationCluster.cluster_id,
             ENDPOINT_ID: 1,
         }
@@ -349,7 +349,7 @@ def _remote(
     model: str,
     config_cluster: type[InnrDeviceConfigurationCluster],
     remote_mode: type[t.enum8],
-    keys: list[tuple[str, KeyId, str, str]],
+    keys: list[tuple[str, int, str, str]],
     *,
     double_press: bool,
 ) -> QuirkBuilder:
