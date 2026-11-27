@@ -24,6 +24,7 @@ from zha.application.platforms import (
     number,
     select,
     sensor,
+    siren,
     switch,
 )
 from zha.application.platforms.event.const import ATTR_PRESS_COUNT
@@ -35,6 +36,7 @@ from zhaquirks.builder.metadata import (
     ButtonEventMetadata,
     EntityMetadata,
     NumberMetadata,
+    SirenMetadata,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
@@ -58,6 +60,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
     (Platform.SENSOR, ZCLSensorMetadata): sensor.Sensor,
     (Platform.SELECT, ZCLEnumMetadata): select.ZCLEnumSelectEntity,
     (Platform.NUMBER, NumberMetadata): number.NumberConfigurationEntity,
+    (Platform.SIREN, SirenMetadata): siren.AttributeSiren,
     (Platform.SWITCH, SwitchMetadata): switch.ConfigurableAttributeSwitch,
     (Platform.EVENT, ButtonEventMetadata): event.ZhaEventButton,
 }
@@ -163,6 +166,13 @@ def _platform_kwargs(
             "attribute_name": entity_metadata.attribute_name,
             "attribute_converter": entity_metadata.attribute_converter,
             "device_class": entity_metadata.device_class,
+        }
+    if isinstance(entity_metadata, SirenMetadata):
+        return {
+            "attribute_name": entity_metadata.attribute_name,
+            "available_tones": dict(entity_metadata.available_tones),
+            "off_value": entity_metadata.off_value,
+            "default_tone": entity_metadata.default_tone,
         }
     if isinstance(entity_metadata, ZCLEnumMetadata):
         return {
