@@ -247,7 +247,12 @@ class AqaraT2Relay(XiaomiCustomDevice):
         },
     }
 
-    # The S1 and S2 inputs report one event per actuation of the wired switch
+    # The S1 and S2 inputs report one event per actuation of the wired switch. Each
+    # input belongs to its relay's channel: ZHA's automatic split of this model (its
+    # child device allowlist) gives the relay on endpoint N the child device "N", but
+    # moves only entities that repeat on both endpoints, and the unique ID suffixes of
+    # these differ, so they are assigned explicitly. This relies on the model staying
+    # on ZHA's allowlist: without the split, both would be "Button" on the main device.
     button_event_entities = tuple(
         ButtonEventMetadata(
             events=[
@@ -260,9 +265,9 @@ class AqaraT2Relay(XiaomiCustomDevice):
             cluster_type=ClusterType.Server,
             endpoint_id=endpoint_id,
             unique_id_suffix=f"button_{endpoint_id}",
-            translation_key="button_numbered",
-            translation_placeholders={"number": str(endpoint_id)},
-            fallback_name=f"Button {endpoint_id}",
+            child_device_id=str(endpoint_id),
+            translation_key="button",
+            fallback_name="Button",
         )
         for endpoint_id in (1, 2)
     )
