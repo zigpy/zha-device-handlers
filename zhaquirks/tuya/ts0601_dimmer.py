@@ -170,6 +170,7 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE284_m1cvyneb", "TS0601"),  # BSEED
+            ("_TZE284_nqqylykc", "TS0601"),  # Avatto ZDMS16-1
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
