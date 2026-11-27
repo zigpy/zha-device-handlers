@@ -225,7 +225,9 @@ def _add_gangs(
     """Give each gang its own endpoint with a Tuya MCU OnOff cluster.
 
     The DPs are mapped to the gang endpoints by the manufacturer cluster that
-    replaces the Tuya MCU cluster on endpoint 1.
+    replaces the Tuya MCU cluster on endpoint 1. Each gang is a child device, with
+    the id and name ZHA's automatic split gives the channels of the multi-gang models
+    on its allowlist, which can't match `TS0601` by model.
     """
     builder = builder.filter(_reports_one_endpoint).replaces_endpoint(
         1, device_type=device_type
@@ -233,8 +235,20 @@ def _add_gangs(
     for endpoint_id in range(2, gangs + 1):
         builder = builder.adds_endpoint(endpoint_id, device_type=device_type)
     for endpoint_id in range(1, gangs + 1):
-        builder = builder.adds(onoff_cluster, endpoint_id=endpoint_id)
-    return builder
+        builder = builder.adds(onoff_cluster, endpoint_id=endpoint_id).child_device(
+            str(endpoint_id),
+            endpoint_id=endpoint_id,
+            translation_key="channel",
+            translation_placeholders={"index": str(endpoint_id)},
+            fallback_name=f"Channel {endpoint_id}",
+        )
+    # The settings of the Tuya MCU cluster on endpoint 1 (power-on state, backlight)
+    # are the whole device's, so they stay on the main device
+    return builder.change_entity_metadata(
+        endpoint_id=1,
+        cluster_id=TuyaOnOffManufCluster.cluster_id,
+        new_child_device_id=None,
+    )
 
 
 # 2 gangs
