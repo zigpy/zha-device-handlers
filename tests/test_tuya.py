@@ -2272,3 +2272,36 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+@pytest.mark.parametrize(
+    "manufacturer",
+    (
+        "_TZE284_l8xiyymq",
+        "_TZE204_l8xiyymq",
+    ),
+)
+async def test_ts0601_pn6_relay(zigpy_device_from_v2_quirk, manufacturer):
+    """Test ZSVIOT PN6 6-channel DIN rail relay quirk."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer,
+        "TS0601",
+        cluster_ids={
+            1: {
+                TuyaOnOffManufCluster.cluster_id: ClusterType.Server,
+                0xED00: ClusterType.Server,
+            }
+        },
+    )
+    assert hasattr(device, QUIRK_REGISTRY_ENTRY_ATTR)
+
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+    listener = ClusterListener(tuya_cluster)
+
+    # Report DP 1 (switch_1) -> ON
+    hdr, data = tuya_cluster.deserialize(b"\x09\x01\x02\x00\x01\x01\x01\x00\x01\x01")
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    assert listener.attribute_updates == [
+        (tuya_cluster.attributes_by_name["switch_1"].id, True)
+    ]

@@ -3,6 +3,8 @@
 from zha.quirks import TUYA_PLUG_MANUFACTURER
 import zigpy.device
 from zigpy.profiles import zgp, zha
+from zigpy.quirks.v2 import EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -23,6 +25,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     MoesSwitchManufCluster,
     TuyaOnOff,
@@ -415,5 +418,121 @@ def _add_gangs(
         device_type=zha.DeviceType.ON_OFF_SWITCH,
     )
     .replaces(TuyaOnOffManufCluster)
+    .add_to_registry()
+)
+
+
+class SwitchMode(t.enum8):
+    """Switch operating mode."""
+
+    Switch = 0x00
+    Curtain = 0x01
+
+
+class SwitchType(t.enum8):
+    """Physical switch input type."""
+
+    Toggle = 0x00
+    State = 0x01
+    Momentary = 0x02
+
+
+class PowerOnBehavior(t.enum8):
+    """Relay state after power loss."""
+
+    Off = 0x00
+    On = 0x01
+    Previous = 0x02
+
+
+# ZSVIOT PN6 6-channel DIN rail relay
+(
+    TuyaQuirkBuilder("_TZE284_l8xiyymq", "TS0601")
+    .applies_to("_TZE204_l8xiyymq", "TS0601")
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="switch_1",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_1",
+        fallback_name="Switch 1",
+    )
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="switch_2",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_2",
+        fallback_name="Switch 2",
+    )
+    .tuya_switch(
+        dp_id=3,
+        attribute_name="switch_3",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_3",
+        fallback_name="Switch 3",
+    )
+    .tuya_switch(
+        dp_id=4,
+        attribute_name="switch_4",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_4",
+        fallback_name="Switch 4",
+    )
+    .tuya_switch(
+        dp_id=5,
+        attribute_name="switch_5",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_5",
+        fallback_name="Switch 5",
+    )
+    .tuya_switch(
+        dp_id=6,
+        attribute_name="switch_6",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_6",
+        fallback_name="Switch 6",
+    )
+    .tuya_switch(
+        dp_id=13,
+        attribute_name="master_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="master_switch",
+        fallback_name="All switches",
+    )
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="power_on_behavior",
+        enum_class=PowerOnBehavior,
+        translation_key="power_on_behavior",
+        fallback_name="Power-on behavior",
+    )
+    .tuya_enum(
+        dp_id=107,
+        attribute_name="switch_type",
+        enum_class=SwitchType,
+        translation_key="switch_type",
+        fallback_name="Switch type",
+    )
+    .tuya_enum(
+        dp_id=113,
+        attribute_name="switch_mode_l1_l2",
+        enum_class=SwitchMode,
+        translation_key="switch_mode_l1_l2",
+        fallback_name="Switch mode 1-2",
+    )
+    .tuya_enum(
+        dp_id=114,
+        attribute_name="switch_mode_l3_l4",
+        enum_class=SwitchMode,
+        translation_key="switch_mode_l3_l4",
+        fallback_name="Switch mode 3-4",
+    )
+    .tuya_enum(
+        dp_id=115,
+        attribute_name="switch_mode_l5_l6",
+        enum_class=SwitchMode,
+        translation_key="switch_mode_l5_l6",
+        fallback_name="Switch mode 5-6",
+    )
+    .skip_configuration()
     .add_to_registry()
 )
