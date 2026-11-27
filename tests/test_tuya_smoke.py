@@ -117,3 +117,34 @@ async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_v2_quirk):
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zone_status_id
     assert ias_listener.attribute_updates[1][1] == IasZone.ZoneStatus.Alarm_1
+
+
+async def test_0zaf1cr8_battery_low(zigpy_device_from_v2_quirk):
+    """Test battery state enum to battery_low conversion for _TZE284_0zaf1cr8."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_0zaf1cr8", "TS0601")
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    # battery state "high" (2) -> battery is not low
+    message = b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+    assert ep.tuya_manufacturer.get("battery_low") == 0
+
+    # battery state "middle" (1) -> battery is not low
+    message = b"\x09\x3b\x02\x00\x13\x0e\x04\x00\x01\x01"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+    assert ep.tuya_manufacturer.get("battery_low") == 0
+
+    # battery state "low" (0) -> battery is low
+    message = b"\x09\x3c\x02\x00\x14\x0e\x04\x00\x01\x00"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+    assert ep.tuya_manufacturer.get("battery_low") == 1
