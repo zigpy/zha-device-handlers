@@ -69,6 +69,9 @@ zhaquirks.setup()
         ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),
+        ("_TZE200_ka8l86iu", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_zbfmvj13", "TS0601", ZCL_TUYA_MOTION),
+        ("HOBEIAN", "ZG-204ZK", ZCL_TUYA_MOTION),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
