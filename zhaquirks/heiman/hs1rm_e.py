@@ -47,8 +47,24 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     .replaces(HeimanDeviceTemperature)
     .adds(HeimanSpecialCluster, endpoint_id=1)
     .adds(HeimanSpecialCluster, endpoint_id=2)
-    # ZHA splits each channel into a child device, whose name tells the channels
-    # apart, so the entity names don't number them
+    # Each channel is a child device, whose name tells the channels apart, so the
+    # entity names don't number them. The ids and names match the child devices
+    # ZHA's automatic split gives this model, and defining them here keeps the
+    # names unambiguous without that split.
+    .child_device(
+        "1",
+        endpoint_id=1,
+        translation_key="channel",
+        translation_placeholders={"index": "1"},
+        fallback_name="Channel 1",
+    )
+    .child_device(
+        "2",
+        endpoint_id=2,
+        translation_key="channel",
+        translation_placeholders={"index": "2"},
+        fallback_name="Channel 2",
+    )
     # switch input type (Heiman manufacturer-specific cluster 0xFC90)
     .enum(
         attribute_name=HeimanSpecialCluster.AttributeDefs.switch_type.name,
