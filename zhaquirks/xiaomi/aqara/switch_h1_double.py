@@ -238,3 +238,54 @@ class AqaraH1DoubleRockerSwitchNoNeutralAlt(XiaomiOpple2ButtonSwitchBase):
             },
         },
     }
+
+
+class AqaraH1DoubleRockerSwitchNoNeutralAlt2(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (no neutral). Alarms on EP1, Opple on EP2."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.l2aeu1")],
+        ENDPOINTS: {
+            # input_clusters=[0, 2, 3, 4, 5, 6, 9], output_clusters=[10, 25]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                    OppleSwitchCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
