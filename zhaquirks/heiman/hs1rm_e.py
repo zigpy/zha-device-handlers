@@ -47,6 +47,24 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     .replaces(HeimanDeviceTemperature)
     .adds(HeimanSpecialCluster, endpoint_id=1)
     .adds(HeimanSpecialCluster, endpoint_id=2)
+    # Each channel is a child device, whose name tells the channels apart, so the
+    # entity names don't number them. The ids and names match the child devices
+    # ZHA's automatic split gives this model, and defining them here keeps the
+    # names unambiguous without that split.
+    .child_device(
+        "1",
+        endpoint_id=1,
+        translation_key="channel",
+        translation_placeholders={"index": "1"},
+        fallback_name="Channel 1",
+    )
+    .child_device(
+        "2",
+        endpoint_id=2,
+        translation_key="channel",
+        translation_placeholders={"index": "2"},
+        fallback_name="Channel 2",
+    )
     # switch input type (Heiman manufacturer-specific cluster 0xFC90)
     .enum(
         attribute_name=HeimanSpecialCluster.AttributeDefs.switch_type.name,
@@ -54,8 +72,8 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         cluster_id=HeimanSpecialCluster.cluster_id,
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
-        translation_key="switch_type_l1",
-        fallback_name="Switch type L1",
+        translation_key="switch_type",
+        fallback_name="Switch type",
     )
     .enum(
         attribute_name=HeimanSpecialCluster.AttributeDefs.switch_type.name,
@@ -63,8 +81,8 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         cluster_id=HeimanSpecialCluster.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
-        translation_key="switch_type_l2",
-        fallback_name="Switch type L2",
+        translation_key="switch_type",
+        fallback_name="Switch type",
     )
     # switch actions (standard ZCL OnOffConfiguration cluster)
     .enum(
@@ -73,8 +91,8 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         cluster_id=OnOffConfiguration.cluster_id,
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
-        translation_key="switch_action_l1",
-        fallback_name="Switch action L1",
+        translation_key="switch_actions",
+        fallback_name="Switch actions",
     )
     .enum(
         attribute_name=OnOffConfiguration.AttributeDefs.switch_actions.name,
@@ -82,8 +100,8 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         cluster_id=OnOffConfiguration.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
-        translation_key="switch_action_l2",
-        fallback_name="Switch action L2",
+        translation_key="switch_actions",
+        fallback_name="Switch actions",
     )
     .add_to_registry()
 )
