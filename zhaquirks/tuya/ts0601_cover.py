@@ -1,8 +1,17 @@
 """Tuya based cover and blinds."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -579,6 +588,62 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
+        }
+    }
+
+
+class TuyaMoesCover0601_inv_position_GP(TuyaMoesCover0601_inv_position):
+    """Tuya blind controller device with Green Power endpoint and inverted position."""
+
+    signature = {
+        # "node_descriptor": "NodeDescriptor(logical_type=1, mac_capability_flags=142,
+        #                    manufacturer_code=4417, maximum_buffer_size=66,
+        #                    maximum_incoming_transfer_size=66, server_mask=10752,
+        #                    maximum_outgoing_transfer_size=66, descriptor_capability_field=0)",
+        # "endpoints": {
+        # "1": { "profile_id": 260, "device_type": "0x0051", "in_clusters": [ "0x0000", "0x0004","0x0005","0xef00"], "out_clusters": ["0x000a","0x0019"] },
+        # "242": { "profile_id": 41440, "device_type": "0x0061", "in_clusters": [], "out_clusters": ["0x0021"] }
+        # },
+        # "manufacturer": "_TZE204_nladmfvf",
+        # "model": "TS0601",
+        # "class": "zigpy.device.Device"
+        # }
+        MODELS_INFO: [
+            ("_TZE204_nladmfvf", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=["0x0021"]>
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: TuyaMoesCover0601_inv_position.replacement[ENDPOINTS][1],
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         }
     }
 
