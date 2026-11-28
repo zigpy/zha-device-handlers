@@ -1,5 +1,7 @@
 """Tuya TS0601 Thermostat."""
 
+import datetime
+
 from zigpy.types import t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
@@ -608,4 +610,190 @@ base_avatto_quirk = (
     .adds(TuyaThermostat)
     .skip_configuration()
     .add_to_registry()
+)
+
+
+class SensorModeV02(t.enum8):
+    """Tuya sensor mode enum v02."""
+
+    Internal = 0x00
+    Both = 0x01
+    External = 0x02
+
+
+class TuyaMCUTime2000Cluster(TuyaMCUCluster):
+    """Tuya MCU cluster for devices that sync time from 2000-01-01."""
+
+    set_time_offset = datetime.datetime(2000, 1, 1, tzinfo=datetime.UTC)
+    set_time_local_offset = datetime.datetime(2000, 1, 1)
+
+
+# ElectSmart MAX-910Z electric floor heating thermostat
+(
+    TuyaQuirkBuilder("_TZE204_tagezcph", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV03,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=19,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.min_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_number(
+        dp_id=27,
+        type=t.int32s,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        min_value=-9,
+        max_value=9,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Idle if x else RunningState.Heat_State_On,
+    )
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="eco_mode",
+        translation_key="eco_mode",
+        fallback_name="ECO mode",
+    )
+    .tuya_enum(
+        dp_id=43,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorModeV02,
+        translation_key="sensor_mode",
+        fallback_name="Temperature sensor",
+    )
+    .tuya_sensor(
+        dp_id=102,
+        attribute_name="external_temperature",
+        type=t.int32s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="external_temperature",
+        fallback_name="Floor temperature",
+    )
+    .tuya_number(
+        dp_id=103,
+        type=t.uint16_t,
+        attribute_name="deadzone_temperature",
+        min_value=1,
+        max_value=5,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_number(
+        dp_id=104,
+        type=t.int32s,
+        attribute_name="max_temperature_limit",
+        min_value=25,
+        max_value=70,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="max_temperature_limit",
+        fallback_name="High temperature protection",
+    )
+    .tuya_number(
+        dp_id=111,
+        type=t.int32s,
+        attribute_name="min_temperature_limit",
+        min_value=0,
+        max_value=10,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="min_temperature_limit",
+        fallback_name="Low temperature protection",
+    )
+    .tuya_number(
+        dp_id=112,
+        type=t.int32s,
+        attribute_name="eco_temperature",
+        min_value=5,
+        max_value=30,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="eco_temperature",
+        fallback_name="ECO temperature",
+    )
+    .tuya_number(
+        dp_id=113,
+        type=t.uint16_t,
+        attribute_name="brightness",
+        min_value=0,
+        max_value=8,
+        step=1,
+        translation_key="brightness",
+        fallback_name="Screen brightness 06:00-22:00",
+    )
+    .tuya_number(
+        dp_id=114,
+        type=t.uint16_t,
+        attribute_name="display_brightness",
+        min_value=0,
+        max_value=8,
+        step=1,
+        translation_key="display_brightness",
+        fallback_name="Screen brightness 22:00-06:00",
+    )
+    .tuya_enchantment(data_query_spell=True)
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=TuyaMCUTime2000Cluster)
 )
