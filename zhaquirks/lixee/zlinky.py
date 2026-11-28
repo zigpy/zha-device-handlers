@@ -1,10 +1,19 @@
 """Quirk for ZLinky_TIC."""
 
+from collections.abc import Iterator
 from copy import deepcopy
 from typing import Final
 
+from zha.application.platforms import BaseEntity
+from zha.application.platforms.sensor import (
+    BaseElectricalMeasurement,
+    ElectricalMeasurementPoller,
+)
+from zha.zigbee.device import Device as ZHADevice
+from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -17,6 +26,18 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdenti
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import (
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfApparentPower,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfPower,
+)
+from zhaquirks.builder.device import QuirkV2Device
+from zhaquirks.builder.discovery import discover_quirks_v2_entities
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,7 +47,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.legacy import CustomDevice, signature_matches
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 from zhaquirks.tuya import TuyaManufCluster
 
@@ -304,11 +325,237 @@ class ZLinkyTICFWV14(ZLinkyTICFWV12):
     replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
 
 
-class ZLinkyTICFWV15(ZLinkyTICFWV14):
-    """ZLinky_TIC from LiXee with firmware v15.0+."""
+class ZLinkyTICTariffCluster(ZLinkyTICManufacturerCluster):
+    """ZLinky tariff attribute uses ZCL frames without a manufacturer code."""
 
-    signature = deepcopy(ZLinkyTICFWV14.signature)
-    replacement = deepcopy(ZLinkyTICFWV14.replacement)
+    class AttributeDefs(ZLinkyTICManufacturerCluster.AttributeDefs):
+        """Tariff attribute definition for firmware v15 and later."""
 
-    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
-    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+        linky_tariff_period: Final = ZCLAttributeDef(
+            id=0x0010,
+            type=t.LimitedCharString(16),
+            access="rp",
+            manufacturer_code=None,
+        )
+        linky_mode: Final = ZCLAttributeDef(
+            id=0x0300, type=t.uint8_t, access="r", manufacturer_code=None
+        )
+
+
+def tariff_period(value: str | bytes | None) -> str | None:
+    """Remove TIC padding while preserving supplier labels and Tempo codes."""
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    return " ".join(value.replace("\x00", "").split()) or None
+
+
+class ZLinkyTICV15Device(QuirkV2Device):
+    """Use TIC standard three-phase meanings only when the meter mode is known."""
+
+    @property
+    def standard_three_phase(self) -> bool:
+        """Return whether the meter uses standard three-phase TIC, including production."""
+        cluster = self.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+        return cluster.get("linky_mode") in (3, 7)
+
+    async def read_linky_mode(self) -> None:
+        """Read meter metadata once if absent; never poll electrical measurements."""
+        cluster = self.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+        if cluster.get("linky_mode") is not None:
+            return
+        try:
+            await cluster.read_attributes(["linky_mode"], allow_cache=True)
+        except (TimeoutError, ZigbeeException):
+            self.debug("Could not read Linky mode; retaining native electrical sensors")
+
+    async def async_configure(self) -> None:
+        """Identify the TIC mode before selecting reporting configurations."""
+        await self.read_linky_mode()
+        await super().async_configure()
+
+    async def async_initialize(self, from_cache: bool = False) -> None:
+        """Identify the TIC mode before entity discovery, including existing devices."""
+        await self.read_linky_mode()
+        await super().async_initialize(from_cache)
+
+    def discover_entities(self) -> Iterator[BaseEntity]:
+        """Keep native sensors outside the validated standard three-phase modes."""
+        # Calling the ZHA base directly avoids creating the electrical quirk
+        # entities outside these modes, hence avoids configuring their reports.
+        for entity in ZHADevice.discover_entities(self):
+            if self.standard_three_phase and isinstance(
+                entity, (BaseElectricalMeasurement, ElectricalMeasurementPoller)
+            ):
+                continue
+            yield entity
+        for entity in discover_quirks_v2_entities(self):
+            if self.standard_three_phase or not entity.targets_cluster(
+                ElectricalMeasurement.cluster_id
+            ):
+                yield entity
+
+
+# Preserve the exact v15+ signature; older firmware retains its legacy quirk.
+ZLINKY_FW_V15_SIGNATURE = deepcopy(ZLinkyTICFWV14.signature)
+ZLINKY_FW_V15_SIGNATURE[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+
+builder = (
+    QuirkBuilder(LIXEE, "ZLinky_TIC")
+    .filter(signature_matches(ZLINKY_FW_V15_SIGNATURE))
+    .zha_device_class(ZLinkyTICV15Device)
+    .replaces(ZLinkyTICMetering)
+    .replaces(ZLinkyTICTariffCluster)
+    .removes(TuyaManufCluster.cluster_id)
+    .removes(TuyaManufCluster.cluster_id, cluster_type=ClusterType.Client)
+    .sensor(
+        attribute_name=ZLinkyTICTariffCluster.AttributeDefs.linky_tariff_period.name,
+        cluster_id=ZLinkyTICTariffCluster.cluster_id,
+        attribute_converter=tariff_period,
+        reporting_config=ReportingConfig(
+            min_interval=0,
+            max_interval=3600,
+            reportable_change=0,
+        ),
+        unique_id_suffix="tariff_period",
+        translation_key="tariff_period",
+        fallback_name="Tariff period",
+    )
+)
+
+# Preserve native IDs where the measurement and unit are unchanged. The old
+# total_active_power sensor used W for SMAXSN: use a fresh ID for its VA data.
+# See the ZLinky firmware TIC mapping and Zigbee2MQTT's LiXee converter.
+ZLINKY_THREE_PHASE_MEASUREMENTS = (
+    (
+        "rms_current",
+        "2820-rms_current",
+        "Current phase 1",
+        SensorDeviceClass.CURRENT,
+        UnitOfElectricCurrent.AMPERE,
+    ),
+    (
+        "rms_current_ph_b",
+        "2820-rms_current_ph_b",
+        "Current phase 2",
+        SensorDeviceClass.CURRENT,
+        UnitOfElectricCurrent.AMPERE,
+    ),
+    (
+        "rms_current_ph_c",
+        "2820-rms_current_ph_c",
+        "Current phase 3",
+        SensorDeviceClass.CURRENT,
+        UnitOfElectricCurrent.AMPERE,
+    ),
+    (
+        "rms_voltage",
+        "2820-rms_voltage",
+        "Voltage phase 1",
+        SensorDeviceClass.VOLTAGE,
+        UnitOfElectricPotential.VOLT,
+    ),
+    (
+        "rms_voltage_ph_b",
+        "2820-rms_voltage_ph_b",
+        "Voltage phase 2",
+        SensorDeviceClass.VOLTAGE,
+        UnitOfElectricPotential.VOLT,
+    ),
+    (
+        "rms_voltage_ph_c",
+        "2820-rms_voltage_ph_c",
+        "Voltage phase 3",
+        SensorDeviceClass.VOLTAGE,
+        UnitOfElectricPotential.VOLT,
+    ),
+    (
+        "apparent_power",
+        "2820-apparent_power",
+        "Apparent power phase 1",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "apparent_power_ph_b",
+        "2820-apparent_power_ph_b",
+        "Apparent power phase 2",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "apparent_power_ph_c",
+        "2820-apparent_power_ph_c",
+        "Apparent power phase 3",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "total_apparent_power",
+        "2820-total_apparent_power",
+        "Total apparent power",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "active_power",
+        "2820",
+        "Drawn load curve current point",
+        SensorDeviceClass.POWER,
+        UnitOfPower.WATT,
+    ),
+    (
+        "active_power_ph_b",
+        "2820-active_power_ph_b",
+        "Drawn load curve previous point",
+        SensorDeviceClass.POWER,
+        UnitOfPower.WATT,
+    ),
+    (
+        "active_power_max",
+        "2820-apparent_power_max_phase_1",
+        "Maximum apparent power phase 1",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "active_power_max_ph_b",
+        "2820-apparent_power_max_phase_2",
+        "Maximum apparent power phase 2",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "active_power_max_ph_c",
+        "2820-apparent_power_max_phase_3",
+        "Maximum apparent power phase 3",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+    (
+        "total_active_power",
+        "2820-apparent_power_max_total",
+        "Maximum total apparent power",
+        SensorDeviceClass.APPARENT_POWER,
+        UnitOfApparentPower.VOLT_AMPERE,
+    ),
+)
+
+for attribute, suffix, name, device_class, unit in ZLINKY_THREE_PHASE_MEASUREMENTS:
+    builder.sensor(
+        attribute_name=attribute,
+        cluster_id=ElectricalMeasurement.cluster_id,
+        device_class=device_class,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=unit,
+        suggested_display_precision=0,
+        reporting_config=ReportingConfig(
+            min_interval=60, max_interval=900, reportable_change=1
+        ),
+        unique_id_suffix=suffix,
+        translation_key=f"zlinky_{attribute}",
+        fallback_name=name,
+    )
+
+builder.add_to_registry()
