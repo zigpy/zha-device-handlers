@@ -178,6 +178,20 @@ class SEHeatingOutputMode(t.enum8):
     RelayNC = 0x04
 
 
+class SERelayHeatingOutputMode(t.enum8):
+    """Heating output modes offered by the relay thermostats (EKO07259, WDE002497)."""
+
+    Disabled = SEHeatingOutputMode.Disabled.value
+    Relay = SEHeatingOutputMode.Relay.value
+
+
+class SEPilotWireHeatingOutputMode(t.enum8):
+    """Heating output modes offered by thermostats with a pilot wire output."""
+
+    Relay = SEHeatingOutputMode.Relay.value
+    FilPilote = SEHeatingOutputMode.FilPilote.value
+
+
 class SEMetering(CustomCluster, Metering):
     """Schneider Electric Metering cluster."""
 
@@ -385,7 +399,7 @@ class SECycleTime(CustomCluster):
         se_demand_percentage: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
-            access="r",
+            access="rw",
             is_manufacturer_specific=True,
         )
         se_cycle_time: Final = ZCLAttributeDef(
@@ -569,21 +583,19 @@ class SEHeatingCoolingOutput(CustomCluster):
         )
 
 
-(
-    QuirkBuilder(SE_MANUF_NAME, "EKO07259")
-    .applies_to(SE_MANUF_NAME, "WDE002497")
-    .applies_to(SE_MANUF_NAME, "WDE011680")
+BASE_SE_THERMOSTAT_QUIRK = (
+    QuirkBuilder()
     .replaces(SEBasic)
     .replaces(SEBasic, endpoint_id=2)
-    .replaces(SEBasic, endpoint_id=3)
     .replaces(SEBasic, endpoint_id=5)
     .replaces(SEThermostat)
     .replaces(SEUserInterface)
     .replaces(SETemperatureMeasurement, endpoint_id=2)
-    .replaces(SETemperatureMeasurementExternal, endpoint_id=3)
     .replaces(SEMetering, endpoint_id=5)
     .replaces(SECycleTime)
     .replaces(SEHeatingCoolingOutput)
+    # There is no real meter: the thermostat reports this load as power while the
+    # relay is on and integrates it into energy, so energy stays 0 until it is set.
     .number(
         cluster_id=SEMetering.cluster_id,
         endpoint_id=5,
@@ -759,6 +771,17 @@ class SEHeatingCoolingOutput(CustomCluster):
         enum_class=SEHeatingEmitterType,
     )
     .number(
+        cluster_id=SECycleTime.cluster_id,
+        endpoint_id=1,
+        attribute_name=SECycleTime.AttributeDefs.se_demand_percentage.name,
+        translation_key="regulator_level",
+        fallback_name="Regulator level",
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=10,
+    )
+    .number(
         cluster_id=SETemperatureMeasurement.cluster_id,
         endpoint_id=2,
         attribute_name=SETemperatureMeasurement.AttributeDefs.se_sensor_correction.name,
@@ -771,6 +794,13 @@ class SEHeatingCoolingOutput(CustomCluster):
         step=0.1,
         multiplier=0.01,
     )
+)
+
+# Thermostats with an input for an external (floor) temperature sensor on endpoint 3
+FLOOR_SENSOR_SE_THERMOSTAT_QUIRK = (
+    BASE_SE_THERMOSTAT_QUIRK.clone()
+    .replaces(SEBasic, endpoint_id=3)
+    .replaces(SETemperatureMeasurementExternal, endpoint_id=3)
     .number(
         cluster_id=SETemperatureMeasurementExternal.cluster_id,
         endpoint_id=3,
@@ -791,6 +821,49 @@ class SEHeatingCoolingOutput(CustomCluster):
         translation_key="external_temperature_sensor_type",
         fallback_name="External temperature sensor type",
         enum_class=SETemperatureSensorType,
+    )
+)
+
+(
+    FLOOR_SENSOR_SE_THERMOSTAT_QUIRK.clone()
+    .applies_to(SE_MANUF_NAME, "EKO07259")
+    .applies_to(SE_MANUF_NAME, "WDE002497")
+    .enum(
+        cluster_id=SEHeatingCoolingOutput.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEHeatingCoolingOutput.AttributeDefs.se_heating_output_mode.name,
+        translation_key="heating_output_mode",
+        fallback_name="Heating output mode",
+        enum_class=SERelayHeatingOutputMode,
+    )
+    .add_to_registry()
+)
+
+(
+    FLOOR_SENSOR_SE_THERMOSTAT_QUIRK.clone()
+    .applies_to(SE_MANUF_NAME, "WDE011680")
+    .enum(
+        cluster_id=SEHeatingCoolingOutput.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEHeatingCoolingOutput.AttributeDefs.se_heating_output_mode.name,
+        translation_key="heating_output_mode",
+        fallback_name="Heating output mode",
+        enum_class=SEPilotWireHeatingOutputMode,
+    )
+    .add_to_registry()
+)
+
+# Odace smart thermostat: no external sensor input, so no endpoint 3
+(
+    BASE_SE_THERMOSTAT_QUIRK.clone()
+    .applies_to(SE_MANUF_NAME, "S520619")
+    .enum(
+        cluster_id=SEHeatingCoolingOutput.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEHeatingCoolingOutput.AttributeDefs.se_heating_output_mode.name,
+        translation_key="heating_output_mode",
+        fallback_name="Heating output mode",
+        enum_class=SEPilotWireHeatingOutputMode,
     )
     .add_to_registry()
 )
