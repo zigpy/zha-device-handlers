@@ -26,15 +26,21 @@ ZCL commands supported:
 
 Broken ZCL attributes:
     0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
+
+Broken ZCL commands:
+    0x0201 - GetWeeklyScheduleResponse (0x00): The device does not echo the TSN of the
+        GetWeeklySchedule request, it uses its own outgoing sequence number instead.
 """
 
 from collections.abc import Callable
+import dataclasses
 from datetime import UTC, datetime
 import time
 from typing import Any
 
 from zha.quirks import DANFOSS_ALLY_THERMOSTAT
 from zigpy import types
+from zigpy.device import ResponseKey
 from zigpy.profiles import zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -58,6 +64,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.legacy import CustomDevice
 
@@ -68,6 +75,8 @@ POPP = "D5X84YU"
 occupied_heating_setpoint = Thermostat.AttributeDefs.occupied_heating_setpoint
 system_mode = Thermostat.AttributeDefs.system_mode
 min_heat_setpoint_limit = Thermostat.AttributeDefs.min_heat_setpoint_limit
+get_weekly_schedule = Thermostat.ServerCommandDefs.get_weekly_schedule
+get_weekly_schedule_response = Thermostat.ClientCommandDefs.get_weekly_schedule_response
 
 
 class DanfossViewingDirectionEnum(types.enum8):
@@ -385,6 +394,26 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
         return write_res
 
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Any = None,
+    ) -> None:
+        """Emit a ZHA event for GetWeeklyScheduleResponse.
+
+        ZHA discards the response of a command issued through its services, so the
+        event is the only way to get the weekly schedule into Home Assistant.
+        """
+        if (
+            hdr.command_id == get_weekly_schedule_response.id
+            and hdr.direction == foundation.Direction.Server_to_Client
+        ):
+            self.listener_event(ZHA_SEND_EVENT, get_weekly_schedule_response.name, args)
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+
     async def bind(self):
         """According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
 
@@ -496,6 +525,89 @@ class DanfossThermostat(CustomDevice):
     quirk_id = DANFOSS_ALLY_THERMOSTAT
 
     manufacturer_code = 0x1246
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the device and the list of pending GetWeeklySchedule requests."""
+        # (endpoint id, TSN) of GetWeeklySchedule requests in the order they were
+        # issued. zigpy only registers a request in `_requests` once it is actually
+        # sent, so queued requests can be in this list without being pending yet.
+        self._weekly_schedule_requests: list[tuple[int, int]] = []
+        super().__init__(*args, **kwargs)
+
+    async def request(
+        self, profile, cluster, src_ep, dst_ep, sequence, data, *args, **kwargs
+    ):
+        """Send a request, remembering the TSN of GetWeeklySchedule requests.
+
+        See `_maybe_match_response` for why the TSN is needed.
+        """
+        entry = None
+
+        if cluster == Thermostat.cluster_id:
+            hdr, _ = foundation.ZCLHeader.deserialize(data)
+            if (
+                hdr.frame_control.is_cluster
+                and hdr.command_id == get_weekly_schedule.id
+                and hdr.direction == foundation.Direction.Client_to_Server
+            ):
+                entry = (dst_ep, sequence)
+                self._weekly_schedule_requests.append(entry)
+
+        try:
+            return await super().request(
+                profile, cluster, src_ep, dst_ep, sequence, data, *args, **kwargs
+            )
+        finally:
+            if entry is not None:
+                self._weekly_schedule_requests.remove(entry)
+
+    def _maybe_match_response(
+        self, rsp_key: ResponseKey, cmd: Any | None, error: Exception | None
+    ) -> bool:
+        """Match GetWeeklyScheduleResponse to its request by command instead of TSN.
+
+        The device answers GetWeeklySchedule with its own TSN instead of the TSN of
+        the request. The response is therefore matched to the oldest pending
+        GetWeeklySchedule request on the same endpoint. It is never consumed here, so
+        the cluster still emits the ZHA event and sends the default response.
+
+        Returns True if the packet was consumed as a response, like zigpy does.
+        """
+        if not (
+            rsp_key.cluster_id == Thermostat.cluster_id
+            and rsp_key.direction == foundation.Direction.Server_to_Client
+            and isinstance(cmd, get_weekly_schedule_response.schema)
+        ):
+            return super()._maybe_match_response(rsp_key, cmd, error)
+
+        # Firmware that does echo the TSN is matched exactly. Only TSNs of
+        # GetWeeklySchedule requests are candidates, so the device's own TSN can never
+        # resolve another pending Thermostat request.
+        candidates = [rsp_key] + [
+            dataclasses.replace(rsp_key, tsn=tsn)
+            for endpoint_id, tsn in self._weekly_schedule_requests
+            if endpoint_id == rsp_key.endpoint_id
+        ]
+
+        for key in candidates:
+            if (key.endpoint_id, key.tsn) not in self._weekly_schedule_requests:
+                continue
+
+            future = self._requests.get(key)
+            if future is None or future.done():
+                continue
+
+            if key != rsp_key:
+                self.debug(
+                    "Matching GetWeeklyScheduleResponse with TSN %d to request with TSN %d",
+                    rsp_key.tsn,
+                    key.tsn,
+                )
+
+            super()._maybe_match_response(key, cmd, error)
+            break
+
+        return False
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
