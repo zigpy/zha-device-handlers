@@ -156,7 +156,6 @@ class MoesBHT(TuyaThermostat):
         #  output_clusters=[10, 25]
         MODELS_INFO: [
             ("_TZE200_aoclfnxz", "TS0601"),
-            ("_TZE200_2ekuz3dz", "TS0601"),
             ("_TZE200_ye5jkfsb", "TS0601"),
             ("_TZE200_u9bfwha0", "TS0601"),
         ],
