@@ -34,6 +34,7 @@ class DimmableBulb(CustomDevice):
             ("_TZ3000_nosnx7im", "TS0501A"),
             ("_TZ3000_nbnmw9nc", "TS0501A"),
             ("_TZ3000_7dcddnye", "TS0501A"),
+            ("_TZ3000_j2w1dw29", "TS0501A"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
