@@ -109,6 +109,7 @@ RELAY_OUTPUT_TYPE_RELAY2_ATTR_ID = 0x7007
 TEMPERATURE_SENSOR_SELECT_ATTR_ID = 0x7008
 EXTERNAL_TEMPERATURE_INPUT_ATTR_ID = 0x7009
 EXTERNAL_TEMPERATURE_SENSOR_ATTR_ID = 0x700A
+REMOTE_DOOR_OPEN_ATTR_ID = 0x7F10
 HVAC_MESSAGE_OPEN_WINDOW_STATE_ATTR_ID = 0x7F0B
 NTC_CURRENT_TEMPERATURE_ATTR_ID = 0x7F0C
 NTC_CURRENT_TEMPERATURE_STATE_ATTR_ID = 0x7F0D
@@ -848,6 +849,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             type=t.Bool,
             access="rw",
             manufacturer_code=0x1286,
+        )
+        remote_door_open: Final = ZCLAttributeDef(
+            id=REMOTE_DOOR_OPEN_ATTR_ID,
+            type=t.Bool,
+            access="rw",
+            manufacturer_code=None,
         )
         remote_temperature_source1: Final = ZCLAttributeDef(
             id=REMOTE_TEMPERATURE_SOURCE_ATTR_IDS[0], type=t.int16s, access="rw"
@@ -1793,6 +1800,33 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
         return (int(relay1) & 0x01) | ((int(relay2) & 0x01) << 1)
 
+    def _decode_remote_door_open(self, value: Any) -> bool | None:
+        """Decode a complete door TLV without inventing a state for missing data."""
+
+        # Validate every declared TLV before accepting a door state.
+        raw = self._as_bytes(value)
+        if raw is None or len(raw) < 3 or raw[1:3] != b"\x01\x00":
+            return None
+        if raw[0] == 0:
+            return False
+        offset = 3
+        door_open = None
+        for _ in range(raw[0]):
+            if offset + 2 > len(raw):
+                return None
+            kind, length = raw[offset : offset + 2]
+            offset += 2
+            if offset + length > len(raw):
+                return None
+            if kind == 0:
+                if length not in (1, 4):
+                    return None
+                door_open = bool(
+                    int.from_bytes(raw[offset : offset + length], "little")
+                )
+            offset += length
+        return door_open
+
     def _decode_remote_attribute_linkage(
         self, value: Any
     ) -> tuple[TemperatureSensorSelect, int]:
@@ -2104,6 +2138,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 duration_minutes,
             )
         elif attrid == self.AttributeDefs.remote_attribute_linkage.id:
+            door_open = self._decode_remote_door_open(value)
+            if door_open is not None:
+                super()._update_attribute(
+                    self.AttributeDefs.remote_door_open.id, door_open
+                )
             sensor_select, external_temperature = self._decode_remote_attribute_linkage(
                 value
             )
@@ -2214,6 +2253,41 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         success: list[foundation.ReadAttributeRecord] = []
         failed: list[foundation.ReadAttributeRecord] = []
         remaining = list(attributes)
+
+        # A missing or failed door read remains unknown instead of implying closed.
+        door_attr = self.AttributeDefs.remote_door_open.id
+        if door_attr in remaining:
+            remaining.remove(door_attr)
+            raw_success, raw_failed = self._split_read_results(
+                await super().read_attributes_raw(
+                    [self.AttributeDefs.remote_attribute_linkage.id],
+                    manufacturer=manufacturer,
+                    **kwargs,
+                )
+            )
+            door_open = None
+            if raw_success and raw_success[0].status == foundation.Status.SUCCESS:
+                raw = raw_success[0].value.value
+                self._update_attribute(
+                    self.AttributeDefs.remote_attribute_linkage.id, raw
+                )
+                door_open = self._decode_remote_door_open(raw)
+            if door_open is None:
+                status = (
+                    raw_success[0].status
+                    if raw_success
+                    and raw_success[0].status != foundation.Status.SUCCESS
+                    else (
+                        self._first_status(raw_failed)
+                        if raw_failed
+                        else foundation.Status.FAILURE
+                    )
+                )
+                # Missing door data does not mean the virtual attribute is unsupported.
+                # Zigpy processes success and failure records in the first list.
+                success.append(self._read_record(door_attr, None, status))
+            else:
+                success.append(self._read_record(door_attr, door_open))
 
         external_switch = self.AttributeDefs.external_temperature_sensor
         read_external_switch = external_switch.id in remaining
@@ -2738,6 +2812,36 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
         result: list[list[foundation.WriteAttributesStatusRecord]] = []
         remaining_attributes = attributes.copy()
+
+        has_door, door_value = self._pop_attribute_value(
+            remaining_attributes, self.AttributeDefs.remote_door_open
+        )
+        if has_door:
+            if door_value not in (0, 1):
+                raise ValueError("remote_door_open must be a boolean or 0/1")
+            # Send only the door TLV; firmware preserves existing temperature sources.
+            payload = bytes((1, 1, 0, 0, 4, int(door_value), 0, 0, 0))
+            door_result = await super().write_attributes(
+                {self.AttributeDefs.remote_attribute_linkage.id: payload},
+                **{**kwargs, "update_cache": False},
+            )
+            result.extend(
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        record.status,
+                        self.AttributeDefs.remote_door_open.id
+                        if record.status != foundation.Status.SUCCESS
+                        else None,
+                    )
+                    for record in records
+                ]
+                for records in door_result
+            )
+            if _write_succeeded(door_result) and kwargs.get("update_cache", True):
+                # The outgoing partial payload is not a complete 0x601E snapshot.
+                self._update_attribute(
+                    self.AttributeDefs.remote_door_open.id, bool(door_value)
+                )
 
         has_ui_system_mode, ui_system_mode_value = self._pop_attribute_value(
             remaining_attributes, self.AttributeDefs.tp_wgzba_ui_system_mode
@@ -3298,7 +3402,14 @@ for attr_name, translation_key, fallback_name in (
     )
 
 _BUILDER = (
-    _BUILDER.number(
+    _BUILDER.switch(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.remote_door_open.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="remote_door_open",
+        fallback_name="External contact sensor",
+    )
+    .number(
         Thermostat.AttributeDefs.local_temperature_calibration.name,
         Thermostat.cluster_id,
         min_value=-10.0,

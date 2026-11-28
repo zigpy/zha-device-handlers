@@ -93,6 +93,285 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
     )
 
 
+def test_tp_wgzba_remote_door_switch(tp_wgzba_device):
+    """Discover the external contact switch and follow linkage reports."""
+    # Exercise entity discovery as well as the virtual attribute mapping.
+    entry = DEVICE_REGISTRY.match_entry(tp_wgzba_device)
+    (metadata,) = (
+        item
+        for item in entry.zha_device_factory.quirk_definition.entity_metadata
+        if item.translation_key == "remote_door_open"
+    )
+    assert metadata.entity_platform.value == "switch"
+    assert metadata.entity_type.value == "config"
+    assert (metadata.endpoint_id, metadata.cluster_id, metadata.attribute_name) == (
+        1,
+        SONOFF_PRIVATE_CLUSTER_ID,
+        "remote_door_open",
+    )
+    assert metadata.fallback_name == "External contact sensor"
+    zha_device = entry.zha_device_factory(tp_wgzba_device, mock.MagicMock())
+    (switch,) = (
+        entity
+        for entity in zha_device.discover_entities()
+        if entity.translation_key == "remote_door_open"
+    )
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    for payload, expected in (
+        ("01 01 00 00 04 01 00 00 00", True),
+        ("01 01 00 00 04 00 00 00 00", False),
+    ):
+        cluster.update_attribute(
+            cluster.AttributeDefs.remote_attribute_linkage.id, bytes.fromhex(payload)
+        )
+        assert switch.state.is_on is expected
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ("00 01 00", False),
+        ("01 01 00 00 01 00", False),
+        ("01 01 00 00 01 01", True),
+        ("01 01 00 00 04 00 00 00 00", False),
+        ("01 01 00 00 04 00 01 00 00", True),
+        ("02 01 00 01 03 02 66 08 00 04 01 00 00 00", True),
+        ("02 01 00 00 04 00 00 00 00 01 03 02 66 08", False),
+    ],
+)
+def test_tp_wgzba_remote_door_reports(tp_wgzba_device, payload, expected):
+    """Decode both door TLV widths, padding, and mixed temperature reports."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    # Firmware may pad the linkage snapshot to its fixed buffer length.
+    cluster.update_attribute(
+        defs.remote_attribute_linkage.id, bytes.fromhex(payload).ljust(64, b"\x00")
+    )
+    assert cluster.get(defs.remote_door_open.name) == expected
+    if payload.startswith("02"):
+        assert cluster.get(defs.temperature_sensor_select.name) == (
+            tp_wgzba.TemperatureSensorSelect.external_2
+        )
+        assert cluster.get(defs.external_temperature_input.name) == 2150
+
+
+@pytest.mark.parametrize("cached_state", [None, False, True])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        b"",
+        bytes.fromhex("01 01"),
+        bytes.fromhex("01 02 00 00 01 00"),
+        bytes.fromhex("01 01 01 00 01 00"),
+        bytes.fromhex("01 01 00"),
+        bytes.fromhex("01 01 00 00"),
+        bytes.fromhex("01 01 00 00 04 01 00 00"),
+        bytes.fromhex("01 01 00 00 00"),
+        bytes.fromhex("01 01 00 00 02 00 00"),
+        bytes.fromhex("01 01 00 01 03 02 66 08"),
+        bytes.fromhex("02 01 00 00 01 00 01 03 02"),
+    ],
+)
+def test_tp_wgzba_remote_door_incomplete_reports_keep_cache(
+    tp_wgzba_device, cached_state, payload
+):
+    """Keep unknown or prior door state when a complete door TLV is absent."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    if cached_state is not None:
+        cluster.update_attribute(defs.remote_door_open.id, cached_state)
+
+    # A valid door TLV followed by a truncated TLV must also be rejected.
+    cluster.update_attribute(defs.remote_attribute_linkage.id, payload)
+    assert cluster.get(defs.remote_door_open.name) == cached_state
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ("00 01 00", False),
+        ("01 01 00 00 01 01", True),
+        ("01 01 00 00 04 00 00 00 00", False),
+    ],
+)
+async def test_tp_wgzba_remote_door_read(tp_wgzba_device, payload, expected):
+    """Read the real linkage attribute and return the virtual boolean."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    record = cluster._read_record(
+        defs.remote_attribute_linkage.id, bytes.fromhex(payload)
+    )
+    # Read through zigpy so the returned record also exercises attribute caching.
+    with mock.patch.object(
+        cluster, "_read_attributes", mock.AsyncMock(return_value=([record],))
+    ) as read_raw:
+        values, failed = await cluster.read_attributes(
+            [defs.remote_door_open.name], allow_cache=False
+        )
+    read_raw.assert_awaited_once()
+    assert read_raw.await_args.args == ([defs.remote_attribute_linkage.id],)
+    assert read_raw.await_args.kwargs["manufacturer"] is None
+    assert values == {defs.remote_door_open.name: expected}
+    assert not failed
+    assert cluster.get(defs.remote_door_open.name) == expected
+
+
+@pytest.mark.parametrize("cached_state", [None, False, True])
+@pytest.mark.parametrize(
+    ("status", "payload", "expected_status"),
+    [
+        (foundation.Status.FAILURE, None, foundation.Status.FAILURE),
+        (
+            foundation.Status.UNSUPPORTED_ATTRIBUTE,
+            None,
+            foundation.Status.UNSUPPORTED_ATTRIBUTE,
+        ),
+        (foundation.Status.SUCCESS, b"", foundation.Status.FAILURE),
+        (
+            foundation.Status.SUCCESS,
+            bytes.fromhex("01 01 00 01 03 02 66 08"),
+            foundation.Status.FAILURE,
+        ),
+        (
+            foundation.Status.SUCCESS,
+            bytes.fromhex("02 01 00 00 01 00 01"),
+            foundation.Status.FAILURE,
+        ),
+    ],
+)
+async def test_tp_wgzba_remote_door_read_failure(
+    tp_wgzba_device, cached_state, status, payload, expected_status
+):
+    """Map read failures to the virtual ID without inventing a closed state."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    if cached_state is not None:
+        cluster.update_attribute(defs.remote_door_open.id, cached_state)
+    record = cluster._read_record(defs.remote_attribute_linkage.id, payload, status)
+
+    # Bypass the cache so zigpy processes the actual virtual read status.
+    with mock.patch.object(
+        cluster, "_read_attributes", mock.AsyncMock(return_value=([record],))
+    ):
+        values, failed = await cluster.read_attributes(
+            [defs.remote_door_open.name], allow_cache=False
+        )
+    assert not values
+    assert failed == {defs.remote_door_open.name: expected_status}
+    if expected_status == foundation.Status.UNSUPPORTED_ATTRIBUTE:
+        # Zigpy invalidates cached values when an attribute is unsupported.
+        assert cluster.is_attribute_unsupported(defs.remote_door_open.name)
+        assert cluster.get(defs.remote_door_open.name) is None
+    else:
+        assert not cluster.is_attribute_unsupported(defs.remote_door_open.name)
+        assert cluster.get(defs.remote_door_open.name) == cached_state
+
+
+@pytest.mark.parametrize("use_id", [False, True])
+@pytest.mark.parametrize("door_open", [False, True, 0, 1])
+@pytest.mark.parametrize(
+    "write_options", [{}, {"update_cache": True}, {"update_cache": False}]
+)
+async def test_tp_wgzba_remote_door_write(
+    tp_wgzba_device, use_id, door_open, write_options
+):
+    """Write a door-only TLV and preserve the complete temperature snapshot."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    snapshot = bytes.fromhex(
+        "02 01 00 00 04 00 00 00 00 03 13 03 "
+        "00 01 01 02 90 06 00 02 01 02 61 0A 00 03 01 02 50 0A"
+    )
+    cluster.update_attribute(defs.remote_attribute_linkage.id, snapshot)
+    preserved = {
+        attr.name: cluster.get(attr.name)
+        for attr in (
+            defs.remote_attribute_linkage,
+            defs.temperature_sensor_select,
+            defs.external_temperature_input,
+            defs.remote_temperature_source1,
+            defs.remote_temperature_source2,
+            defs.remote_temperature_source3,
+        )
+    }
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    # A partial outgoing payload must never replace a complete cached snapshot.
+    with mock.patch.object(
+        cluster, "write_attributes_raw", mock.AsyncMock(return_value=success)
+    ) as write_raw:
+        result = await cluster.write_attributes(
+            {
+                defs.remote_door_open.id
+                if use_id
+                else defs.remote_door_open.name: door_open
+            },
+            **write_options,
+        )
+    write_raw.assert_awaited_once()
+    (written,) = write_raw.await_args.args[0]
+    assert written.attrid == defs.remote_attribute_linkage.id
+    assert written.value.type == DataTypeId.array
+    assert written.value.value == bytes.fromhex(
+        "01 01 00 00 04 01 00 00 00" if door_open else "01 01 00 00 04 00 00 00 00"
+    )
+    assert write_raw.await_args.kwargs["manufacturer_code"] is None
+    assert result == success
+    assert cluster.get(defs.remote_door_open.name) == (
+        bool(door_open) if write_options.get("update_cache", True) else False
+    )
+    assert {name: cluster.get(name) for name in preserved} == preserved
+
+
+@pytest.mark.parametrize("cached_state", [None, False, True])
+async def test_tp_wgzba_remote_door_write_failure(tp_wgzba_device, cached_state):
+    """Return the virtual attribute ID on failure and retain the door cache."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    if cached_state is not None:
+        cluster.update_attribute(defs.remote_door_open.id, cached_state)
+    failure = [
+        [
+            foundation.WriteAttributesStatusRecord(
+                foundation.Status.FAILURE, defs.remote_attribute_linkage.id
+            )
+        ]
+    ]
+    # The wire failure identifies 0x601E; callers must receive the virtual ID.
+    with mock.patch.object(
+        cluster, "write_attributes_raw", mock.AsyncMock(return_value=failure)
+    ) as write_raw:
+        result = await cluster.write_attributes(
+            {defs.remote_door_open.name: not cached_state}
+        )
+    write_raw.assert_awaited_once()
+    assert result == [
+        [
+            foundation.WriteAttributesStatusRecord(
+                foundation.Status.FAILURE, defs.remote_door_open.id
+            )
+        ]
+    ]
+    assert cluster.get(defs.remote_door_open.name) == cached_state
+
+
+@pytest.mark.parametrize("value", [None, -1, 2, "1", b"\x01"])
+async def test_tp_wgzba_remote_door_rejects_invalid_write(tp_wgzba_device, value):
+    """Reject invalid door values before sending a request or updating cache."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    # Invalid input must not become a truthy open-door command.
+    with (
+        mock.patch.object(
+            cluster, "write_attributes_raw", new_callable=mock.AsyncMock
+        ) as write_raw,
+        pytest.raises(ValueError, match="remote_door_open must be a boolean or 0/1"),
+    ):
+        await cluster.write_attributes({defs.remote_door_open.name: value})
+    write_raw.assert_not_awaited()
+    assert cluster.get(defs.remote_door_open.name) is None
+
+
 async def test_tp_wgzba_external_temperature_mode_sensor(tp_wgzba_device):
     """Expose the switch and report the mode before a remote source is bound."""
     entry = DEVICE_REGISTRY.match_entry(tp_wgzba_device)
