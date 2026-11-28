@@ -1,6 +1,7 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import asyncio
+import math
 from typing import Any
 
 import zigpy.types as t
@@ -10,6 +11,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks import MotionWithReset
 from zhaquirks.builder import (
     LIGHT_LUX,
+    PERCENTAGE,
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
@@ -19,7 +21,11 @@ from zhaquirks.builder import (
     UnitOfLength,
     UnitOfTime,
 )
-from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    TUYA_SEND_DATA,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -193,6 +199,34 @@ class TuyaMotionDetectionMode(t.enum8):
     Only_PIR = 0x00
     PIR_and_radar = 0x01
     Only_radar = 0x03
+
+
+class WenzhiScenePreset(t.enum8):
+    """Wenzhi MTD085-ZB scene preset enum."""
+
+    Custom = 0x00
+    Toilet = 0x01
+    Kitchen = 0x02
+    Hallway = 0x03
+    Bedroom = 0x04
+    Living_room = 0x05
+    Meeting_room = 0x06
+    Factory_default = 0x07
+
+
+class WenzhiSensorState(t.enum8):
+    """Wenzhi MTD085-ZB sensor state override enum."""
+
+    On = 0x00
+    Occupied = 0x01
+    Unoccupied = 0x02
+
+
+class WenzhiDistanceReportMode(t.enum8):
+    """Wenzhi MTD085-ZB target distance report mode enum."""
+
+    Normal = 0x00
+    Occupancy_detection = 0x01
 
 
 base_tuya_motion = (
@@ -1522,6 +1556,188 @@ base_tuya_motion = (
     # Remaining DPs not exposed in z2m.
     .skip_configuration()
     .add_to_registry()
+)
+
+
+# Wenzhi MTD085-ZB 5.8GHz human presence sensor
+# Also sold as WenzhiIoT MTD085-ZB-5.8G, Excellux MTD085 and wenzhi X85.
+# Occupancy is reported natively via the IAS Zone cluster, the Tuya cluster
+# is not advertised and settings are written with send_data.
+(
+    TuyaQuirkBuilder("_TZ321C_fkzihax8", "TS0225")
+    .applies_to("_TZ321C_4slreunp", "TS0225")
+    .tuya_illuminance(
+        dp_id=107,
+        converter=lambda x: 10000 * math.log10(x / 10) + 1 if x >= 10 else 0,
+    )
+    .tuya_sensor(
+        dp_id=119,
+        attribute_name="target_distance",
+        type=t.uint16_t,
+        divisor=100,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        translation_key="target_distance",
+        fallback_name="Target distance",
+    )
+    .tuya_number(
+        dp_id=115,
+        attribute_name="radar_sensitivity",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=10,
+        max_value=100,
+        step=10,
+        translation_key="radar_sensitivity",
+        fallback_name="Radar sensitivity",
+    )
+    .tuya_number(
+        dp_id=117,
+        attribute_name="detection_range",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=8,
+        step=0.1,
+        multiplier=0.01,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=116,
+        attribute_name="shield_range",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=8,
+        step=0.1,
+        multiplier=0.01,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="entry_sensitivity",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=10,
+        max_value=100,
+        step=10,
+        translation_key="entry_sensitivity",
+        fallback_name="Entry sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="entry_distance",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=8,
+        step=0.1,
+        multiplier=0.01,
+        translation_key="entry_distance",
+        fallback_name="Entry distance",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="entry_filter_time",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=0.5,
+        step=0.05,
+        multiplier=0.01,
+        translation_key="entry_filter_time",
+        fallback_name="Entry filter time",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="departure_delay",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=7200,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="block_time",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="block_time",
+        fallback_name="Block time",
+    )
+    .tuya_enum(
+        dp_id=111,
+        attribute_name="scene_preset",
+        enum_class=WenzhiScenePreset,
+        translation_key="scene_preset",
+        fallback_name="Scene preset",
+    )
+    .tuya_enum(
+        dp_id=112,
+        attribute_name="sensor_state",
+        enum_class=WenzhiSensorState,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .tuya_enum(
+        dp_id=120,
+        attribute_name="distance_report_mode",
+        enum_class=WenzhiDistanceReportMode,
+        translation_key="distance_report_mode",
+        fallback_name="Distance report mode",
+    )
+    .tuya_enum(
+        dp_id=114,
+        attribute_name="status_indication",
+        enum_class=TuyaStatusIndication,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_enum(
+        dp_id=108,
+        attribute_name="debug_mode",
+        enum_class=TuyaStatusIndication,
+        translation_key="debug_mode",
+        fallback_name="Debug mode",
+    )
+    .tuya_sensor(
+        dp_id=109,
+        attribute_name="debug_distance",
+        type=t.uint16_t,
+        divisor=100,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="debug_distance",
+        fallback_name="Debug distance",
+    )
+    .tuya_sensor(
+        dp_id=110,
+        attribute_name="debug_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="debug_countdown",
+        fallback_name="Debug countdown",
+    )
+    # 113 (cline) and 118 (equipment_status) are undocumented.
+    .tuya_enchantment()
+    .add_to_registry(mcu_write_command=TUYA_SEND_DATA)
 )
 
 
