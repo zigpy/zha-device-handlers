@@ -531,3 +531,44 @@ class HikingPowerMeter(TuyaSwitch):
             },
         }
     }
+
+
+class TuyaDINPowerMeasurement(ElectricalMeasurement, TuyaLocalCluster):
+    """Electrical measurements reported by the _TZE204_cjbofhxw DIN meter.
+
+    The device reports voltage in decivolts, current in milliamps and power
+    in deciwatts. Keep the raw datapoint values and expose the correct
+    engineering units through the standard Electrical Measurement scaling.
+    """
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
+    }
+
+
+(
+    TuyaQuirkBuilder("_TZE204_cjbofhxw", "TS0601")
+    .tuya_dp(
+        dp_id=18,
+        ep_attribute=TuyaDINPowerMeasurement.ep_attribute,
+        attribute_name="rms_current",
+    )
+    .tuya_dp(
+        dp_id=19,
+        ep_attribute=TuyaDINPowerMeasurement.ep_attribute,
+        attribute_name="active_power",
+    )
+    .tuya_dp(
+        dp_id=20,
+        ep_attribute=TuyaDINPowerMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
+    )
+    .adds(TuyaDINPowerMeasurement)
+    .tuya_enchantment()
+    .add_to_registry()
+)
