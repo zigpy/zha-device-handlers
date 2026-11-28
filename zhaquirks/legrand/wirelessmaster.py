@@ -28,7 +28,7 @@ class MasterRemotePowerConfiguration(LegrandPowerConfigurationCluster):
     }
 
 
-def _button(number: int, group_id: int) -> dict:
+def _button(name: str, group_id: int) -> dict:
     """Return the button event entity of the button recalling the given group."""
     return {
         # The remote sends a single recall as soon as a button goes down, and
@@ -46,10 +46,9 @@ def _button(number: int, group_id: int) -> dict:
         ],
         "cluster_id": Scenes.cluster_id,
         "cluster_type": ClusterType.Client,
-        "unique_id_suffix": f"button_{number}",
-        "translation_key": "button_numbered",
-        "translation_placeholders": {"number": str(number)},
-        "fallback_name": f"Button {number}",
+        "unique_id_suffix": f"button_{name}",
+        "translation_key": f"{name}_button",
+        "fallback_name": f"{name.capitalize()} button",
     }
 
 
@@ -57,7 +56,7 @@ def _button(number: int, group_id: int) -> dict:
     QuirkBuilder(f" {LEGRAND}", " Master remote SW Home / Away")
     .replaces(MasterRemotePowerConfiguration)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
-    .button_event(**_button(1, HOME_GROUP_ID))
-    .button_event(**_button(2, AWAY_GROUP_ID))
+    .button_event(**_button("home", HOME_GROUP_ID))
+    .button_event(**_button("away", AWAY_GROUP_ID))
     .add_to_registry()
 )
